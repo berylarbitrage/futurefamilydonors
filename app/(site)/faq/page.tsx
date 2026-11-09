@@ -30,7 +30,7 @@ export default function FaqPage() {
             <a
               key={g}
               href={`#${g}`}
-              className="border-border bg-card hover:border-primary rounded-full border px-4 py-2 text-sm font-medium"
+              className="border-primary bg-card text-primary hover:bg-primary hover:text-primary-foreground font-display rounded-md border-2 px-4 py-2 text-sm font-bold"
             >
               {FAQ[g].title}
             </a>
@@ -39,7 +39,10 @@ export default function FaqPage() {
         <div className="space-y-12">
           {ORDER.map((g) => (
             <div key={g} id={g} className="scroll-mt-24">
-              <h2 className="mb-4 text-2xl font-semibold">{FAQ[g].title}</h2>
+              <h2 className="text-primary mb-5 flex items-center gap-3 text-2xl font-bold md:text-3xl">
+                <span className="bg-accent size-3" aria-hidden />
+                {FAQ[g].title}
+              </h2>
               <FaqList items={FAQ[g].items} />
             </div>
           ))}
@@ -48,7 +51,7 @@ export default function FaqPage() {
           <Button asChild>
             <Link href="/apply/egg">Apply as an Egg Donor</Link>
           </Button>
-          <Button asChild>
+          <Button asChild variant="primary">
             <Link href="/apply/sperm">Apply as a Sperm Donor</Link>
           </Button>
         </div>

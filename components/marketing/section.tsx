@@ -6,6 +6,7 @@ export function Section({
   title,
   intro,
   className,
+  tone = "light",
   children,
 }: {
   id?: string;
@@ -13,24 +14,41 @@ export function Section({
   title?: React.ReactNode;
   intro?: React.ReactNode;
   className?: string;
+  /** "dark" when the section sits on a navy band. */
+  tone?: "light" | "dark";
   children: React.ReactNode;
 }) {
+  const dark = tone === "dark";
   return (
-    <section id={id} className={cn("mx-auto max-w-6xl px-4 py-14 md:py-20", className)}>
+    <section id={id} className={cn("mx-auto max-w-6xl px-4 py-16 md:py-24", className)}>
       {(eyebrow || title || intro) && (
-        <div className="mb-10 max-w-2xl">
+        <div className="mb-10 max-w-3xl md:mb-14">
           {eyebrow && (
-            <p className="text-accent mb-3 flex items-center gap-3 text-xs font-semibold tracking-[0.22em] uppercase">
-              <span className="bg-brand h-px w-8" aria-hidden />
+            <p
+              className={cn(
+                "mb-4 flex items-center gap-3 text-xs font-bold tracking-[0.24em] uppercase",
+                dark ? "text-sun" : "text-accent-strong",
+              )}
+            >
+              <span className={cn("size-2.5", dark ? "bg-sun" : "bg-accent")} aria-hidden />
               {eyebrow}
             </p>
           )}
           {title && (
-            <h2 className="text-primary text-3xl leading-tight font-medium tracking-tight md:text-5xl">
+            <h2
+              className={cn(
+                "text-[2rem] leading-[1.05] font-bold tracking-tight md:text-5xl",
+                dark ? "text-white" : "text-primary",
+              )}
+            >
               {title}
             </h2>
           )}
-          {intro && <div className="text-muted mt-4 text-lg">{intro}</div>}
+          {intro && (
+            <div className={cn("mt-5 text-lg", dark ? "text-on-dark-muted" : "text-muted")}>
+              {intro}
+            </div>
+          )}
         </div>
       )}
       {children}

@@ -4,24 +4,28 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-display font-bold tracking-tight transition-[background-color,color,border-color,transform,box-shadow] duration-150 focus-visible:outline-3 focus-visible:outline-offset-2 disabled:pointer-events-none disabled:opacity-50 motion-safe:active:translate-y-px [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        // CTA — accent color per design spec
+        // CTA — coral fill, navy text (5.5:1)
         default:
-          "bg-brand text-accent-foreground shadow-lg shadow-accent/25 hover:brightness-110 hover:shadow-accent/35",
-        primary: "bg-primary text-primary-foreground hover:brightness-110",
+          "bg-accent text-accent-foreground border-2 border-primary hover:bg-sun hover:shadow-hard-sm motion-safe:hover:-translate-x-0.5 motion-safe:hover:-translate-y-0.5",
+        primary:
+          "bg-primary text-primary-foreground border-2 border-primary hover:bg-navy-2 hover:text-sun",
         outline:
-          "border-2 border-primary/30 text-primary bg-card/60 backdrop-blur hover:border-primary hover:bg-primary-soft",
+          "border-2 border-primary text-primary bg-card hover:bg-primary hover:text-primary-foreground",
+        // For navy backgrounds
+        inverse:
+          "border-2 border-white text-white bg-transparent hover:bg-white hover:text-primary",
         ghost: "hover:bg-muted-bg text-foreground",
         destructive: "bg-destructive text-white hover:brightness-110",
         link: "text-primary underline-offset-4 hover:underline rounded-none",
       },
       size: {
-        default: "h-11 px-6 text-sm",
-        sm: "h-9 px-4 text-sm",
-        lg: "h-13 px-8 text-base",
+        default: "h-11 px-5 text-sm",
+        sm: "h-10 px-4 text-sm",
+        lg: "h-14 px-7 text-base",
         icon: "size-10",
       },
     },

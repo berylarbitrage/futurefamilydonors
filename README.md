@@ -8,7 +8,7 @@ Next.js 15（App Router）+ TypeScript + Tailwind v4 + shadcn/ui 风格组件 + 
 ## 1. 本地启动
 
 ```bash
-cd goodbeginningsclub
+cd futurefamilydonors
 pnpm install
 cp .env.example .env.local   # 然后填入下面第 2 节拿到的值
 pnpm dev                     # http://localhost:3000
@@ -152,7 +152,7 @@ SUPABASE_URL=http://127.0.0.1:54321 SUPABASE_ANON_KEY=... SUPABASE_SERVICE_ROLE_
 - ✅ Require status checks to pass → 选择 `Lint, tests & build` 和 `Database migrations & access rules`
 - ✅ Do not allow bypassing the above settings（可选）
 
-**预览环境使用独立的测试数据库（强烈建议）：** 新建一个 Supabase 项目（如 `goodbeginningsclub-staging`）并运行全部迁移文件；在 Vercel → Environment Variables 中把 `NEXT_PUBLIC_SUPABASE_URL`、`NEXT_PUBLIC_SUPABASE_ANON_KEY`、`SUPABASE_SERVICE_ROLE_KEY` 分别为 **Production** 和 **Preview** 填不同的值。这样预览测试不会写入真实申请数据。
+**预览环境使用独立的测试数据库（强烈建议）：** 新建一个 Supabase 项目（如 `futurefamilydonors-staging`）并运行全部迁移文件；在 Vercel → Environment Variables 中把 `NEXT_PUBLIC_SUPABASE_URL`、`NEXT_PUBLIC_SUPABASE_ANON_KEY`、`SUPABASE_SERVICE_ROLE_KEY` 分别为 **Production** 和 **Preview** 填不同的值。这样预览测试不会写入真实申请数据。
 
 ## 7. 项目结构
 

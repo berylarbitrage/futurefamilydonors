@@ -3,13 +3,13 @@ import { normalizeUrl } from "@/lib/url";
 
 describe("normalizeUrl", () => {
   it.each([
-    ["https://www.goodbeginningsclub.com", "https://www.goodbeginningsclub.com"],
-    ["https://www.goodbeginningsclub.com/", "https://www.goodbeginningsclub.com"],
+    ["https://www.futurefamilydonors.com", "https://www.futurefamilydonors.com"],
+    ["https://www.futurefamilydonors.com/", "https://www.futurefamilydonors.com"],
     [
-      "[www.goodbeginningsclub.com](https://www.goodbeginningsclub.com)",
-      "https://www.goodbeginningsclub.com",
+      "[www.futurefamilydonors.com](https://www.futurefamilydonors.com)",
+      "https://www.futurefamilydonors.com",
     ],
-    ["www.goodbeginningsclub.com", "https://www.goodbeginningsclub.com"],
+    ["www.futurefamilydonors.com", "https://www.futurefamilydonors.com"],
     ["<https://abc.supabase.co>", "https://abc.supabase.co"],
     ['"https://abc.supabase.co" ', "https://abc.supabase.co"],
     ["http://localhost:3000", "http://localhost:3000"],

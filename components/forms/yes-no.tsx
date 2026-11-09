@@ -29,8 +29,8 @@ export function YesNo({
           <label
             key={v}
             className={cn(
-              "border-border bg-card flex h-11 flex-1 cursor-pointer items-center justify-center rounded-full border-2 text-sm font-medium capitalize",
-              "has-[:checked]:border-primary has-[:checked]:bg-primary-soft has-[:checked]:text-primary",
+              "border-input bg-card flex h-11 flex-1 cursor-pointer items-center justify-center rounded-md border-2 text-sm font-semibold capitalize",
+              "has-[:checked]:border-primary has-[:checked]:bg-primary has-[:checked]:text-primary-foreground",
               "has-[:focus-visible]:outline-ring has-[:focus-visible]:outline-2",
             )}
           >

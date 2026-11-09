@@ -302,7 +302,7 @@ export function PrescreenForm({
 
   if (blocked) {
     return (
-      <div role="status" className="bg-card rounded-2xl p-8 text-center shadow-sm">
+      <div role="status" className="bg-card border-primary rounded-lg border-2 p-8 text-center">
         <h2 className="text-2xl font-semibold">Thank you for your interest</h2>
         <p className="text-muted mt-3">
           You must be at least {MIN_APPLICANT_AGE} years old to apply to become a donor. We
@@ -328,7 +328,7 @@ export function PrescreenForm({
   });
 
   return (
-    <div className="bg-card rounded-2xl p-5 shadow-sm sm:p-8">
+    <div className="bg-card border-primary shadow-hard rounded-lg border-2 p-5 sm:p-8">
       <div className="mb-6">
         <div className="mb-2 flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
           <span className="font-medium">
@@ -344,10 +344,10 @@ export function PrescreenForm({
           aria-valuemin={0}
           aria-valuemax={100}
           aria-label="Application progress"
-          className="bg-muted-bg h-2 overflow-hidden rounded-full"
+          className="bg-muted-bg h-2 overflow-hidden rounded-sm"
         >
           <div
-            className="bg-primary h-full rounded-full transition-all"
+            className="bg-accent h-full rounded-sm transition-all"
             style={{ width: `${pct}%` }}
           />
         </div>
@@ -651,7 +651,7 @@ export function PrescreenForm({
                     ).map(([v, l]) => (
                       <label
                         key={v}
-                        className="border-border bg-card has-[:checked]:border-primary has-[:checked]:bg-primary-soft has-[:checked]:text-primary flex h-11 cursor-pointer items-center justify-center rounded-full border-2 text-sm font-medium has-[:focus-visible]:outline-2"
+                        className="border-input bg-card has-[:checked]:border-primary has-[:checked]:bg-primary has-[:checked]:text-primary-foreground flex h-11 cursor-pointer items-center justify-center rounded-md border-2 text-sm font-semibold has-[:focus-visible]:outline-2"
                       >
                         <input
                           type="radio"

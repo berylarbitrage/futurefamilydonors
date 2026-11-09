@@ -22,17 +22,17 @@ export function LoginCard({
 }) {
   return (
     <div className="bg-background flex min-h-dvh items-center justify-center px-4 py-16">
-      <div className="border-border bg-card w-full max-w-sm rounded-2xl border p-8 shadow-sm">
+      <div className="border-primary bg-card shadow-hard w-full max-w-sm rounded-lg border-2 p-8">
         <div className="mb-6 flex items-center gap-3">
-          <span className="bg-primary-soft text-primary flex size-10 items-center justify-center rounded-full">
+          <span className="bg-primary text-sun flex size-10 items-center justify-center rounded-md">
             <Icon className="size-5" aria-hidden />
           </span>
           <div>
-            <p className="text-primary font-serif font-semibold">{SITE.brand}</p>
+            <p className="text-primary font-display font-bold">{SITE.brand}</p>
             <p className="text-muted text-xs tracking-widest uppercase">{area}</p>
           </div>
         </div>
-        <h1 className="text-2xl font-semibold">{title}</h1>
+        <h1 className="text-primary text-2xl font-bold">{title}</h1>
         <p className="text-muted mt-1 mb-6 text-sm">{intro}</p>
         {error === "link" && (
           <p role="alert" className="bg-accent-soft mb-4 rounded-lg p-3 text-sm">

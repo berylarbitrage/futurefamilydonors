@@ -1,18 +1,36 @@
 import Link from "next/link";
 import { SITE } from "@/config/site";
 import { LogoMark } from "@/components/brand/logo-mark";
+import { cn } from "@/lib/utils";
 
-export function Logo({ showSubtitle = true }: { showSubtitle?: boolean }) {
+export function Logo({
+  showSubtitle = true,
+  inverse = false,
+}: {
+  showSubtitle?: boolean;
+  inverse?: boolean;
+}) {
   return (
-    <Link href="/" className="group flex items-center gap-2" aria-label={`${SITE.brand} home`}>
-      <LogoMark className="h-9 w-11 shrink-0 transition-transform group-hover:scale-105" />
+    <Link
+      href="/"
+      className={cn(
+        "group flex items-center gap-2.5",
+        inverse ? "text-primary-foreground" : "text-primary",
+      )}
+      aria-label={`${SITE.brand} home`}
+    >
+      <LogoMark className="size-10 shrink-0 transition-transform motion-safe:group-hover:-translate-y-0.5" />
       <span className="flex flex-col leading-none">
-        <span className="text-primary font-serif text-xl font-medium tracking-tight italic">
+        <span className="font-display text-lg font-bold tracking-tight whitespace-nowrap sm:text-xl">
           {SITE.brand}
-          <sup className="ml-0.5 align-super text-[0.5em] not-italic">™</sup>
         </span>
         {showSubtitle && (
-          <span className="text-muted mt-1 hidden text-[0.6rem] font-semibold tracking-[0.22em] uppercase sm:block">
+          <span
+            className={cn(
+              "mt-1 hidden text-[0.62rem] font-bold tracking-[0.2em] uppercase sm:block",
+              inverse ? "text-sun" : "text-accent-strong",
+            )}
+          >
             {SITE.subtitle}
           </span>
         )}

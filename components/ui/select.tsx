@@ -8,7 +8,7 @@ export function NativeSelect({ className, children, ...props }: React.ComponentP
     <div className="relative">
       <select
         className={cn(
-          "border-border bg-card text-foreground focus-visible:outline-ring aria-invalid:border-destructive flex h-11 w-full appearance-none rounded-lg border pr-9 pl-3 text-base focus-visible:outline-2",
+          "border-input bg-card text-foreground focus-visible:outline-ring aria-invalid:border-destructive focus-visible:border-primary flex h-11 w-full appearance-none rounded-md border-2 pr-9 pl-3 text-base focus-visible:outline-2",
           className,
         )}
         {...props}

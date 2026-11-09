@@ -1,87 +1,179 @@
 import { useId } from "react";
-import { LogoMark } from "@/components/brand/logo-mark";
 
-/** Decorative hero illustrations in the brand palette. Inline SVG = no extra request. */
+const CORAL = "#FF5A3C";
+const SUN = "#FFC53D";
+const WHITE = "#FFFFFF";
+
+/** Shared orbit rings + slowly rotating "planets". Centred at (240, 220). */
+function Orbits({ dots = true }: { dots?: boolean }) {
+  return (
+    <>
+      <circle cx="240" cy="220" r="206" stroke={WHITE} strokeOpacity="0.1" strokeWidth="1.5" />
+      <circle
+        cx="240"
+        cy="220"
+        r="168"
+        stroke={WHITE}
+        strokeOpacity="0.22"
+        strokeWidth="1.5"
+        strokeDasharray="2 8"
+      />
+      {dots && (
+        <g className="animate-orbit" style={{ transformOrigin: "240px 220px" }}>
+          <circle cx="240" cy="52" r="7" fill={SUN} />
+          <circle cx="385.5" cy="304" r="5" fill={WHITE} />
+          <circle cx="94.5" cy="304" r="4" fill={CORAL} />
+        </g>
+      )}
+    </>
+  );
+}
+
+/** A small constellation: dots joined by thin lines. */
+function Constellation({
+  points,
+  x = 0,
+  y = 0,
+}: {
+  points: [number, number][];
+  x?: number;
+  y?: number;
+}) {
+  const d = points.map(([px, py], i) => `${i ? "L" : "M"}${px + x} ${py + y}`).join(" ");
+  return (
+    <g>
+      <path d={d} stroke={WHITE} strokeOpacity="0.45" strokeWidth="1.5" />
+      {points.map(([px, py], i) => (
+        <circle
+          key={i}
+          cx={px + x}
+          cy={py + y}
+          r={i === points.length - 1 ? 5.5 : 4}
+          fill={i === points.length - 1 ? SUN : WHITE}
+          className={i === 1 ? "animate-blink" : undefined}
+        />
+      ))}
+    </g>
+  );
+}
+
+/** Abstract geometric hero illustrations (navy backgrounds). Inline SVG only. */
 export function HeroArt({ variant }: { variant: "home" | "egg" | "sperm" }) {
   const id = useId().replace(/:/g, "");
   return (
-    <div className="relative mx-auto aspect-[6/5] w-full max-w-md" aria-hidden>
-      {/* soft glow plate */}
-      <div className="from-primary-soft via-card to-accent-soft shadow-accent/10 absolute inset-4 rounded-[3rem] bg-gradient-to-br shadow-2xl" />
-      <svg viewBox="0 0 480 400" className="absolute inset-0 h-full w-full">
+    <div className="relative mx-auto aspect-[12/11] w-full max-w-[16rem] sm:max-w-md" aria-hidden>
+      <svg viewBox="0 0 480 440" className="absolute inset-0 h-full w-full" fill="none">
         <defs>
-          <radialGradient id={`a-${id}`} cx="35%" cy="30%" r="80%">
-            <stop offset="0%" stopColor="#EBDDF8" />
-            <stop offset="60%" stopColor="#BE9BE0" />
-            <stop offset="100%" stopColor="#8A5FC0" />
-          </radialGradient>
-          <radialGradient id={`b-${id}`} cx="60%" cy="30%" r="80%">
-            <stop offset="0%" stopColor="#FFF0EC" />
-            <stop offset="60%" stopColor="#FBC3B4" />
-            <stop offset="100%" stopColor="#EE9AA6" />
-          </radialGradient>
-          <linearGradient id={`c-${id}`} x1="0" x2="1">
-            <stop offset="0%" stopColor="#B892DD" />
-            <stop offset="100%" stopColor="#F7AE9E" />
-          </linearGradient>
+          <clipPath id={`sun-${id}`}>
+            <rect x="0" y="0" width="480" height="330" />
+          </clipPath>
         </defs>
+
+        {variant === "home" && (
+          <>
+            <Orbits />
+            {/* rising sun with horizon stripes */}
+            <g clipPath={`url(#sun-${id})`}>
+              <circle cx="240" cy="300" r="128" fill={CORAL} />
+            </g>
+            <g fill="#0E1A3A">
+              <rect x="100" y="262" width="280" height="6" />
+              <rect x="100" y="282" width="280" height="9" />
+              <rect x="100" y="306" width="280" height="12" />
+            </g>
+            <path d="M40 330H440" stroke={WHITE} strokeWidth="3" />
+            <path d="M88 352H392" stroke={WHITE} strokeOpacity="0.35" strokeWidth="2" />
+            <path d="M136 372H344" stroke={WHITE} strokeOpacity="0.2" strokeWidth="2" />
+            {/* family constellation above the horizon */}
+            <Constellation
+              points={[
+                [70, 120],
+                [128, 78],
+                [196, 112],
+                [154, 150],
+              ]}
+            />
+            <circle cx="372" cy="112" r="30" fill={SUN} />
+            <rect
+              x="356"
+              y="196"
+              width="34"
+              height="34"
+              stroke={SUN}
+              strokeWidth="3"
+              transform="rotate(18 373 213)"
+            />
+          </>
+        )}
 
         {variant === "egg" && (
           <>
-            <circle cx="250" cy="200" r="130" fill={`url(#b-${id})`} opacity="0.9" />
-            <circle cx="250" cy="200" r="78" fill="#FFF7F4" opacity="0.85" />
-            <circle cx="250" cy="200" r="40" fill={`url(#a-${id})`} />
-            <circle
-              cx="250"
-              cy="200"
-              r="150"
-              fill="none"
-              stroke={`url(#c-${id})`}
+            <Orbits />
+            <circle cx="240" cy="220" r="118" stroke={CORAL} strokeWidth="26" />
+            <circle cx="240" cy="220" r="72" fill={SUN} />
+            <circle cx="240" cy="220" r="24" fill="#0E1A3A" />
+            <circle cx="240" cy="220" r="24" stroke={WHITE} strokeWidth="3" />
+            <path
+              d="M240 20V60M240 380V420M40 220H80M400 220H440"
+              stroke={WHITE}
+              strokeOpacity="0.5"
               strokeWidth="2"
-              opacity="0.5"
-              strokeDasharray="4 10"
+            />
+            <Constellation
+              x={300}
+              y={300}
+              points={[
+                [20, 40],
+                [70, 10],
+                [120, 50],
+              ]}
             />
           </>
         )}
+
         {variant === "sperm" && (
           <>
-            <circle cx="300" cy="170" r="110" fill={`url(#a-${id})`} opacity="0.85" />
+            <Orbits dots={false} />
+            <circle cx="320" cy="170" r="96" fill={CORAL} />
+            <circle cx="320" cy="170" r="132" stroke={WHITE} strokeOpacity="0.35" strokeWidth="2" />
+            {/* motion trajectories heading toward the circle */}
             <path
-              d="M40 300 C 140 200, 230 340, 440 220"
-              stroke={`url(#c-${id})`}
-              strokeWidth="18"
-              fill="none"
-              strokeLinecap="round"
-              opacity="0.9"
+              d="M24 420C120 380 150 300 236 250"
+              stroke={WHITE}
+              strokeOpacity="0.25"
+              strokeWidth="3"
             />
             <path
-              d="M60 340 C 170 260, 260 380, 440 280"
-              stroke="#FBC3B4"
-              strokeWidth="8"
-              fill="none"
-              strokeLinecap="round"
-              opacity="0.8"
+              d="M24 380C110 352 150 282 224 226"
+              stroke={WHITE}
+              strokeOpacity="0.45"
+              strokeWidth="3"
             />
             <path
-              d="M150 160 C 180 150, 196 130, 222 128"
-              stroke="#fff"
+              d="M40 344C120 318 160 250 230 204"
+              stroke={SUN}
               strokeWidth="5"
-              fill="none"
               strokeLinecap="round"
             />
-            <ellipse cx="236" cy="126" rx="12" ry="16" transform="rotate(75 236 126)" fill="#fff" />
+            <circle cx="236" cy="200" r="11" fill={SUN} />
+            <g fill={WHITE}>
+              <circle cx="70" cy="334" r="4" />
+              <circle cx="122" cy="310" r="4" />
+              <circle cx="168" cy="268" r="4" className="animate-blink" />
+            </g>
+            <rect
+              x="60"
+              y="80"
+              width="40"
+              height="40"
+              stroke={SUN}
+              strokeWidth="3"
+              transform="rotate(-12 80 100)"
+            />
+            <circle cx="150" cy="90" r="6" fill={WHITE} />
           </>
         )}
       </svg>
-
-      {variant === "home" && (
-        <LogoMark className="animate-float absolute inset-x-8 top-1/2 mx-auto w-[78%] -translate-y-1/2 drop-shadow-xl" />
-      )}
-
-      {/* floating accents */}
-      <span className="animate-float-delayed bg-peach/80 absolute top-6 right-10 size-10 rounded-full blur-[1px]" />
-      <span className="animate-float bg-lavender/70 absolute bottom-10 left-6 size-6 rounded-full" />
-      <span className="animate-float-delayed bg-blush absolute top-16 left-14 size-4 rounded-full" />
     </div>
   );
 }

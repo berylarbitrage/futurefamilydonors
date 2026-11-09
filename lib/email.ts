@@ -70,7 +70,7 @@ export function emailFrom(): string {
   return configured.includes("<") ? configured : `${SITE.brand} <${configured}>`;
 }
 
-/** Domain part of the configured sender, e.g. "goodbeginningsclub.com". */
+/** Domain part of the configured sender, e.g. "futurefamilydonors.com". */
 export function emailFromDomain(): string | null {
   const m = /@([^>\s]+)>?\s*$/.exec(emailFrom());
   return m ? m[1]!.toLowerCase() : null;

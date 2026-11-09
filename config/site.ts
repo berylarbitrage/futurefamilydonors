@@ -5,9 +5,9 @@ import { normalizeUrl } from "@/lib/url";
  * Replace these values before launch — every page reads from here.
  */
 export const SITE = {
-  brand: "Good Beginnings Club", // {{BRAND}}
-  domain: "goodbeginningsclub.com", // {{DOMAIN}}
-  contactEmail: "info@goodbeginningsclub.com", // {{CONTACT_EMAIL}} — TODO: confirm
+  brand: "Future Family Donors", // {{BRAND}}
+  domain: "futurefamilydonors.com", // {{DOMAIN}}
+  contactEmail: "info@futurefamilydonors.com", // {{CONTACT_EMAIL}} — TODO: confirm
   contactPhone: "(000) 000-0000", // {{CONTACT_PHONE}}
   eggComp: "$8,000 – $12,000 per cycle", // {{EGG_COMP}}
   /**
@@ -20,7 +20,7 @@ export const SITE = {
   referralBonus: "$500", // {{REFERRAL_BONUS}}
   serviceArea: "Serving donors across the U.S. and internationally",
   tagline:
-    "Egg & sperm donation. Help build families — and be compensated for your time and commitment.",
+    "The future of family starts with you. Become an egg or sperm donor and be compensated for your time and commitment.",
   subtitle: "Egg & Sperm Donation",
 } as const;
 

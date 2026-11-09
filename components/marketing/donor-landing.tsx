@@ -32,14 +32,16 @@ export function DonorLanding({ c }: { c: DonorLandingContent }) {
         <Button asChild size="lg">
           <Link href={applyHref}>Start Your Application</Link>
         </Button>
-        <Button asChild size="lg" variant="outline">
+        <Button asChild size="lg" variant="inverse">
           <Link href="#requirements">See Requirements</Link>
         </Button>
       </Hero>
 
       {c.partnerNote && (
-        <div className="mx-auto max-w-6xl px-4">
-          <p className="bg-primary-soft rounded-xl p-4 text-sm">{c.partnerNote}</p>
+        <div className="mx-auto max-w-6xl px-4 pt-10">
+          <p className="border-accent bg-card rounded-md border-2 border-l-8 p-4 text-sm">
+            {c.partnerNote}
+          </p>
         </div>
       )}
 
@@ -51,41 +53,43 @@ export function DonorLanding({ c }: { c: DonorLandingContent }) {
         </p>
       </Section>
 
-      <div className="bg-muted-bg">
-        <Section eyebrow="Compensation" title="Compensation & covered costs">
+      <div className="bg-navy-grid on-dark">
+        <Section tone="dark" eyebrow="Compensation" title="Compensation & covered costs">
           <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <p className="text-primary text-sm font-semibold">Compensation</p>
-              <p className="mt-2 font-serif text-3xl font-semibold">{c.comp.amount}</p>
-              <p className="text-muted mt-3 text-sm">
+            <div className="bg-accent text-accent-foreground shadow-hard-sun rounded-lg p-7">
+              <p className="text-xs font-bold tracking-[0.24em] uppercase">Compensation</p>
+              <p className="font-display mt-3 text-3xl leading-tight font-bold tracking-tight md:text-4xl">
+                {c.comp.amount}
+              </p>
+              <p className="mt-4 text-sm font-medium">
                 {c.comp.note ??
                   "Paid for your time, effort, and commitment. Amounts vary by program."}
               </p>
-            </Card>
-            <Card>
-              <p className="text-primary text-sm font-semibold">Covered at no cost to you</p>
-              <ul className="mt-3 space-y-2">
+            </div>
+            <div className="bg-navy-2 rounded-lg border-2 border-white/20 p-7">
+              <p className="text-sun text-xs font-bold tracking-[0.24em] uppercase">
+                Covered at no cost to you
+              </p>
+              <ul className="mt-4 space-y-3">
                 {c.comp.covered.map((x) => (
-                  <li key={x} className="flex gap-2">
-                    <span aria-hidden className="text-accent">
-                      ●
-                    </span>
+                  <li key={x} className="flex gap-3">
+                    <span aria-hidden className="bg-sun mt-2 size-2 shrink-0" />
                     {x}
                   </li>
                 ))}
               </ul>
-            </Card>
+            </div>
           </div>
         </Section>
       </div>
 
       <Section eyebrow="The process" title="What to expect, step by step">
-        <div className="max-w-2xl">
+        <div className="max-w-3xl">
           <Timeline steps={c.steps} />
         </div>
       </Section>
 
-      <div className="bg-muted-bg">
+      <div className="bg-dots border-primary border-y-2">
         <Section
           eyebrow="Your questions"
           title="Things you might be wondering about"
@@ -94,7 +98,7 @@ export function DonorLanding({ c }: { c: DonorLandingContent }) {
           <div className="grid gap-6 md:grid-cols-2">
             {c.concerns.map((x) => (
               <Card key={x.title}>
-                <h3 className="font-sans text-lg font-semibold">{x.title}</h3>
+                <h3 className="text-primary text-xl font-bold">{x.title}</h3>
                 <p className="text-muted mt-2">{x.body}</p>
               </Card>
             ))}
@@ -106,12 +110,18 @@ export function DonorLanding({ c }: { c: DonorLandingContent }) {
         <FaqList items={faq.items} />
       </Section>
 
-      <section className="mx-auto max-w-6xl px-4 pb-10 text-center">
-        <h2 className="text-3xl font-semibold">Ready to take the first step?</h2>
-        <p className="text-muted mt-3">The pre-screen takes about 3 minutes.</p>
-        <Button asChild size="lg" className="mt-6">
-          <Link href={applyHref}>Start Your Application</Link>
-        </Button>
+      <section className="mx-auto max-w-6xl px-4 pb-12">
+        <div className="bg-navy-grid on-dark flex flex-col items-start gap-6 rounded-lg p-8 md:flex-row md:items-center md:justify-between md:p-12">
+          <div>
+            <h2 className="text-3xl font-bold text-white md:text-4xl">
+              Ready to take the first step?
+            </h2>
+            <p className="text-on-dark-muted mt-2">The pre-screen takes about 3 minutes.</p>
+          </div>
+          <Button asChild size="lg">
+            <Link href={applyHref}>Start Your Application</Link>
+          </Button>
+        </div>
       </section>
 
       <Disclaimer />
