@@ -119,7 +119,17 @@ SUPABASE_URL=http://127.0.0.1:54321 SUPABASE_ANON_KEY=... SUPABASE_SERVICE_ROLE_
 
 ## 5. 上线验收清单
 
-- [ ] 用一个合格条件提交卵子预筛 → 结果页显示合格 → 收到 “Next steps” 邮件 → 点链接进入 `/portal/application`
+- [ ] 先打开 `/setup-check`，确认所有配置项都是绿色
+- [ ] 右上角 “Apply Now” → 出现 Egg / Sperm 两个选项；打开 `/apply` 也能选择项目
+- [ ] 用**新邮箱**、合格条件提交卵子预筛 → **直接进入** `/portal/application`（顶部显示 “Great news — you pre-qualify!”），不需要先去邮箱
+- [ ] 同时收到 “Continue your … donor application” 备份邮件 → 换个浏览器点邮件里的按钮，能回到同一份申请继续填
+- [ ] 在完整申请里填几项、停顿 2 秒（显示 “Saved automatically”）→ 刷新页面，内容还在
+- [ ] 用**已有账号的邮箱**再提交一次合格预筛（24 小时后）→ 不会自动登录，结果页提示去邮箱点链接继续（安全设计）
+- [ ] 国家选非美国（如 Canada）→ State/ZIP 隐藏，显示 State/Province、City、Postal code（选填）；电话可填国际号码；后台详情显示国家/省/城市
+- [ ] “Have you donated before?” 选 Yes → 出现追问（次数、时间、取卵数（仅卵子）、是否知道怀孕 Yes/No/Unknown、机构/诊所）；不填无法下一步；后台详情能看到这些回答
+- [ ] 完整申请里选 Yes 的问题（用药、手术、过敏、心理治疗、纹身、领养、家族病史、怀孕次数 > 0、性病史等）→ 出现对应追问；改回 No 后追问消失、不再要求填写
+- [ ] 精子预筛同样走一遍；`/sperm-donor` 页面是配对流程（8 步），没有 “per month / weekly / 6 months / sperm bank” 等说法
+- [ ] 导航和页脚都没有 “Intended Parents” 入口
 - [ ] 完成 5 个表单段、上传童年照 + 近照、签名提交 → 状态变为 `full_app_submitted`，管理员收到通知
 - [ ] 用不合格条件提交 → 收到感谢邮件（含推荐链接）
 - [ ] 同一邮箱 24 小时内再次提交 → 提示已提交
