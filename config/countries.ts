@@ -1,0 +1,57 @@
+/** Country list for the application form. "United States" is the default. */
+export const DEFAULT_COUNTRY = "United States";
+
+export const COUNTRIES = [
+  "United States",
+  "Canada",
+  "Mexico",
+  "United Kingdom",
+  "Ireland",
+  "Australia",
+  "New Zealand",
+  "Argentina",
+  "Austria",
+  "Belgium",
+  "Brazil",
+  "Chile",
+  "China",
+  "Colombia",
+  "Czech Republic",
+  "Denmark",
+  "Finland",
+  "France",
+  "Germany",
+  "Greece",
+  "Hong Kong",
+  "Hungary",
+  "India",
+  "Israel",
+  "Italy",
+  "Japan",
+  "Malaysia",
+  "Netherlands",
+  "Norway",
+  "Peru",
+  "Philippines",
+  "Poland",
+  "Portugal",
+  "Romania",
+  "Singapore",
+  "South Africa",
+  "South Korea",
+  "Spain",
+  "Sweden",
+  "Switzerland",
+  "Taiwan",
+  "Thailand",
+  "Turkey",
+  "Ukraine",
+  "United Arab Emirates",
+  "Vietnam",
+  "Other",
+] as const;
+export type Country = (typeof COUNTRIES)[number];
+
+export function isUnitedStates(country: string | undefined | null): boolean {
+  return !country || country === DEFAULT_COUNTRY;
+}

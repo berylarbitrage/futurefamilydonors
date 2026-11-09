@@ -1,0 +1,158 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Brand tokens from the Good Beginnings Club logo. The site is always light,
+   regardless of the visitor's system dark-mode setting. (A .dark class is
+   kept below for possible future use but is never applied.)
+   plum #3C1860 (wordmark) · lavender #C09CD8 · peach #FCC0B4 · blush #FCD8D8 */
+:root {
+  color-scheme: light;
+  --primary: #4a2172; /* plum — headings, brand, links */
+  --primary-foreground: #ffffff;
+  --accent: #7b4bb3; /* violet — CTA buttons (white text, AA contrast) */
+  --accent-foreground: #ffffff;
+  --background: #fdf8fb;
+  --foreground: #2a1a38;
+  --muted: #6a5c77;
+  --muted-bg: #f6eef7;
+  --card: #ffffff;
+  --border: #eadff0;
+  --ring: #7b4bb3;
+  --destructive: #b42318;
+  --primary-soft: #f0e7fa; /* lavender wash */
+  --accent-soft: #fdebe6; /* peach wash */
+  --lavender: #c09cd8;
+  --peach: #fcc0b4;
+  --blush: #fcd8d8;
+}
+
+.dark {
+  --primary: #d9c2f2;
+  --primary-foreground: #241035;
+  --accent: #b28be0;
+  --accent-foreground: #1d0c2c;
+  --background: #160f1d;
+  --foreground: #f3eef7;
+  --muted: #b6a9c2;
+  --muted-bg: #21172b;
+  --card: #1d1426;
+  --border: #352743;
+  --ring: #b28be0;
+  --destructive: #f97066;
+  --primary-soft: #2a1c3a;
+  --accent-soft: #3a2228;
+  --lavender: #8d6bb0;
+  --peach: #d98f80;
+  --blush: #b98a92;
+}
+
+@theme inline {
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-bg: var(--muted-bg);
+  --color-card: var(--card);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --color-primary-soft: var(--primary-soft);
+  --color-accent-soft: var(--accent-soft);
+  --color-lavender: var(--lavender);
+  --color-peach: var(--peach);
+  --color-blush: var(--blush);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-fraunces), ui-serif, Georgia, serif;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    overflow-x: hidden;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-serif);
+    letter-spacing: -0.01em;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+.prose-legal h2 {
+  @apply mt-8 mb-3 text-xl font-semibold;
+}
+.prose-legal p,
+.prose-legal li {
+  @apply mb-3 leading-relaxed;
+}
+.prose-legal ul {
+  @apply list-disc pl-6;
+}
+
+/* ---- Brand flourishes ---------------------------------------------------- */
+
+/* Primary CTA: violet → plum gradient. */
+.bg-brand {
+  background-image: linear-gradient(135deg, var(--accent) 0%, var(--primary) 100%);
+}
+
+/* Hero / section wash: soft lavender + peach glows, like the logo. */
+.bg-glow {
+  background:
+    radial-gradient(
+      45rem 30rem at 85% 10%,
+      color-mix(in oklab, var(--lavender) 35%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      40rem 28rem at 10% 90%,
+      color-mix(in oklab, var(--peach) 35%, transparent),
+      transparent 70%
+    ),
+    var(--background);
+}
+
+/* Gradient text for emphasised words in headlines. */
+.text-brand-gradient {
+  background-image: linear-gradient(100deg, var(--accent) 10%, #c06c9a 55%, #e8907c 95%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -10px, 0);
+  }
+}
+.animate-float {
+  animation: float-slow 7s ease-in-out infinite;
+}
+.animate-float-delayed {
+  animation: float-slow 8s ease-in-out -3s infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-float,
+  .animate-float-delayed {
+    animation: none;
+  }
+}
