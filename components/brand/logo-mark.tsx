@@ -1,51 +1,39 @@
 /**
- * Future Family Donors mark (F11): two sperm — coral and mint — whose tails
- * curve into a heart around a yellow egg, outlined in thick ink.
+ * Future Family Donors mark (F13): a mint egg drawn as a planet with an ink
+ * orbit ring, and a small coral sperm heading in from the bottom-left —
+ * thick ink outlines throughout.
  *
- * `LogoMarkShapes` is the raw geometry (in the mark's own 6 14 96 86 space) so
- * other art can reuse it; `strokeScale` thickens or thins every outline.
+ * `LogoMarkShapes` is the raw geometry (in the mark's own -6 16 116 104 space)
+ * so other art can reuse it; `strokeScale` thickens or thins every outline.
  */
-export const LOGO_MARK_VIEWBOX = "6 14 96 86";
+export const LOGO_MARK_VIEWBOX = "-6 16 116 104";
 
 export function LogoMarkShapes({ strokeScale = 1 }: { strokeScale?: number }) {
   const s = strokeScale;
   return (
     <>
-      <circle cx="52" cy="58" r="14" fill="#FFDE59" stroke="#111" strokeWidth={3.5 * s} />
-      <path
-        d="M52 92 C 18 70, 16 34, 36 28 C 46 25, 52 32, 52 40"
+      <ellipse
+        cx="52"
+        cy="58"
+        rx="46"
+        ry="16"
         fill="none"
         stroke="#111"
-        strokeWidth={4 * s}
-        strokeLinecap="round"
+        strokeWidth={3.5 * s}
+        transform="rotate(-18 52 58)"
       />
-      <path
-        d="M52 92 C 86 70, 88 34, 68 28 C 58 25, 52 32, 52 40"
-        fill="none"
-        stroke="#111"
-        strokeWidth={4 * s}
-        strokeLinecap="round"
-      />
-      <ellipse
-        cx="36"
-        cy="28"
-        rx="8"
-        ry="6"
-        fill="#FF7A59"
-        stroke="#111"
-        strokeWidth={3 * s}
-        transform="rotate(-20 36 28)"
-      />
-      <ellipse
-        cx="68"
-        cy="28"
-        rx="8"
-        ry="6"
-        fill="#7EE8C4"
-        stroke="#111"
-        strokeWidth={3 * s}
-        transform="rotate(20 68 28)"
-      />
+      <circle cx="52" cy="58" r="24" fill="#7EE8C4" stroke="#111" strokeWidth={4 * s} />
+      <circle cx="52" cy="58" r="12" fill="#D8FFF1" />
+      <g transform="translate(26 92) rotate(-45) scale(0.9)">
+        <path
+          d="M-6 0 C -11 -6, -16 6, -22 0 S -33 -6, -40 0"
+          fill="none"
+          stroke="#111"
+          strokeWidth={3.2 * s}
+          strokeLinecap="round"
+        />
+        <ellipse cx="0" cy="0" rx="7.5" ry="5.4" fill="#FF7A59" stroke="#111" strokeWidth={2 * s} />
+      </g>
     </>
   );
 }

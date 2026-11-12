@@ -7,19 +7,18 @@ export const contentType = "image/png";
 
 const INK = "#111111";
 const LAV = "#C8B8FF";
-const SUN = "#FFDE59";
 const CORAL = "#FF7A59";
 const MINT = "#7EE8C4";
 
-/** The F11 mark as a data-URI SVG (keeps satori to an <img>, no SVG-in-JSX quirks). */
+/** The F13 mark as a data-URI SVG (keeps satori to an <img>, no SVG-in-JSX quirks). */
 const markSvg = (k: number) =>
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="6 14 96 86"><circle cx="52" cy="58" r="14" fill="${SUN}" stroke="${INK}" stroke-width="${3.5 * k}"/><path d="M52 92 C 18 70, 16 34, 36 28 C 46 25, 52 32, 52 40" fill="none" stroke="${INK}" stroke-width="${4 * k}" stroke-linecap="round"/><path d="M52 92 C 86 70, 88 34, 68 28 C 58 25, 52 32, 52 40" fill="none" stroke="${INK}" stroke-width="${4 * k}" stroke-linecap="round"/><ellipse cx="36" cy="28" rx="8" ry="6" fill="${CORAL}" stroke="${INK}" stroke-width="${3 * k}" transform="rotate(-20 36 28)"/><ellipse cx="68" cy="28" rx="8" ry="6" fill="${MINT}" stroke="${INK}" stroke-width="${3 * k}" transform="rotate(20 68 28)"/></svg>`;
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-6 16 116 104"><ellipse cx="52" cy="58" rx="46" ry="16" fill="none" stroke="${INK}" stroke-width="${3.5 * k}" transform="rotate(-18 52 58)"/><circle cx="52" cy="58" r="24" fill="${MINT}" stroke="${INK}" stroke-width="${4 * k}"/><circle cx="52" cy="58" r="12" fill="#D8FFF1"/><g transform="translate(26 92) rotate(-45) scale(0.9)"><path d="M-6 0 C -11 -6, -16 6, -22 0 S -33 -6, -40 0" fill="none" stroke="${INK}" stroke-width="${3.2 * k}" stroke-linecap="round"/><ellipse cx="0" cy="0" rx="7.5" ry="5.4" fill="${CORAL}" stroke="${INK}" stroke-width="${2 * k}"/></g></svg>`;
 const markSrc = (k: number) =>
   `data:image/svg+xml;base64,${Buffer.from(markSvg(k)).toString("base64")}`;
 /** Large art-panel mark gets heavier outlines so it reads as chunky as the rest of the brand. */
-const MARK_SRC_LG = markSrc(1.7);
+const MARK_SRC_LG = markSrc(1.6);
 const MARK_SRC_SM = markSrc(1.25);
-const MARK_RATIO = 86 / 96;
+const MARK_RATIO = 104 / 116;
 
 const BRAND_WORDS = SITE.brand.split(" ");
 const BRAND_LINE_2 = BRAND_WORDS.length > 1 ? BRAND_WORDS[BRAND_WORDS.length - 1] : "";
@@ -67,8 +66,8 @@ export default function OgImage() {
         {/* eslint-disable-next-line jsx-a11y/alt-text */}
         <img
           src={MARK_SRC_LG}
-          width={310}
-          height={Math.round(310 * MARK_RATIO)}
+          width={340}
+          height={Math.round(340 * MARK_RATIO)}
           style={{ margin: "auto" }}
         />
       </div>
@@ -82,7 +81,7 @@ export default function OgImage() {
       >
         <div style={{ display: "flex", alignItems: "center", color: INK }}>
           {/* eslint-disable-next-line jsx-a11y/alt-text */}
-          <img src={MARK_SRC_SM} width={96} height={Math.round(96 * MARK_RATIO)} />
+          <img src={MARK_SRC_SM} width={108} height={Math.round(108 * MARK_RATIO)} />
           <div
             style={{
               display: "flex",

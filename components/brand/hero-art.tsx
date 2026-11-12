@@ -60,9 +60,9 @@ export function HeroArt({ variant }: { variant: "home" | "egg" | "sperm" }) {
               {...S}
               transform="rotate(12 343 293)"
             />
-            {/* the brand mark, blown up: two sperm whose tails make a heart round the egg */}
-            <g transform="translate(52 14) scale(3)">
-              <LogoMarkShapes strokeScale={0.55} />
+            {/* the brand mark, blown up: the egg planet with its orbit and incoming sperm */}
+            <g transform="translate(80 -4) scale(2.6)">
+              <LogoMarkShapes strokeScale={0.58} />
             </g>
             <g className="animate-wobble">
               <Star x={362} y={70} r={32} />
