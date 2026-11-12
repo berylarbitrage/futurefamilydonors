@@ -44,7 +44,7 @@ export function ApplyMenu({ className }: { className?: string }) {
         <div
           id="apply-menu"
           role="menu"
-          className="border-primary bg-card shadow-hard-sm divide-border absolute right-0 z-50 mt-2 w-64 divide-y-2 overflow-hidden rounded-md border-2"
+          className="border-ink divide-ink absolute right-0 z-50 mt-3 w-64 divide-y-3 overflow-hidden rounded-[12px] border-3 bg-white shadow-[5px_5px_0_0_#111]"
         >
           {APPLY_OPTIONS.map((o) => (
             <Link
@@ -52,10 +52,10 @@ export function ApplyMenu({ className }: { className?: string }) {
               href={o.href}
               role="menuitem"
               onClick={() => setOpen(false)}
-              className="hover:bg-sun-soft focus-visible:bg-sun-soft block px-4 py-3"
+              className="hover:bg-sun focus-visible:bg-sun block px-4 py-3 focus-visible:-outline-offset-4"
             >
-              <span className="font-display text-primary block text-base font-bold">{o.label}</span>
-              <span className="text-muted block text-xs">{o.note}</span>
+              <span className="block text-base font-extrabold">{o.label}</span>
+              <span className="text-muted block text-xs font-medium">{o.note}</span>
             </Link>
           ))}
         </div>

@@ -35,7 +35,7 @@ export function MessageReply() {
 
   return (
     <form onSubmit={send} className="space-y-3">
-      <label htmlFor="reply" className="block text-sm font-medium">
+      <label htmlFor="reply" className="block text-sm font-bold">
         Message your coordinator
       </label>
       <Textarea
@@ -53,7 +53,7 @@ export function MessageReply() {
         {status && (
           <span
             role="status"
-            className={status.ok ? "text-primary text-sm" : "text-destructive text-sm"}
+            className={status.ok ? "text-sm font-bold" : "text-destructive text-sm font-bold"}
           >
             {status.text}
           </span>

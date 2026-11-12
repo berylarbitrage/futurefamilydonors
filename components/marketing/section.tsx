@@ -6,7 +6,6 @@ export function Section({
   title,
   intro,
   className,
-  tone = "light",
   children,
 }: {
   id?: string;
@@ -14,41 +13,24 @@ export function Section({
   title?: React.ReactNode;
   intro?: React.ReactNode;
   className?: string;
-  /** "dark" when the section sits on a navy band. */
+  /** Kept for older call sites; every section is light now. */
   tone?: "light" | "dark";
   children: React.ReactNode;
 }) {
-  const dark = tone === "dark";
   return (
-    <section id={id} className={cn("mx-auto max-w-6xl px-4 py-16 md:py-24", className)}>
+    <section
+      id={id}
+      className={cn("mx-auto max-w-6xl scroll-mt-24 px-4 py-14 md:py-20", className)}
+    >
       {(eyebrow || title || intro) && (
-        <div className="mb-10 max-w-3xl md:mb-14">
-          {eyebrow && (
-            <p
-              className={cn(
-                "mb-4 flex items-center gap-3 text-xs font-bold tracking-[0.24em] uppercase",
-                dark ? "text-sun" : "text-accent-strong",
-              )}
-            >
-              <span className={cn("size-2.5", dark ? "bg-sun" : "bg-accent")} aria-hidden />
-              {eyebrow}
-            </p>
-          )}
+        <div className="mb-10 max-w-3xl md:mb-12">
+          {eyebrow && <p className="tag mb-4">{eyebrow}</p>}
           {title && (
-            <h2
-              className={cn(
-                "text-[2rem] leading-[1.05] font-bold tracking-tight md:text-5xl",
-                dark ? "text-white" : "text-primary",
-              )}
-            >
+            <h2 className="text-[2.1rem] leading-[1.05] font-extrabold tracking-tight md:text-5xl">
               {title}
             </h2>
           )}
-          {intro && (
-            <div className={cn("mt-5 text-lg", dark ? "text-on-dark-muted" : "text-muted")}>
-              {intro}
-            </div>
-          )}
+          {intro && <div className="mt-4 text-lg font-medium">{intro}</div>}
         </div>
       )}
       {children}

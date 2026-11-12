@@ -4,8 +4,8 @@ import { Em } from "@/components/marketing/hero";
 import { SITE } from "@/config/site";
 
 export const metadata: Metadata = {
-  title: "Become an Egg Donor",
-  description: `Become an egg donor. Compensation: ${SITE.eggComp}. All medical, travel, legal and insurance costs covered. Apply online in about 3 minutes.`,
+  title: "Egg Donors: Get Paid, Help a Family",
+  description: `Donate eggs, help someone become a parent. ${SITE.eggComp}, with medical, travel, legal and insurance costs covered. The pre-screen takes about 3 minutes.`,
   alternates: { canonical: "/egg-donor" },
 };
 
@@ -14,14 +14,15 @@ export default function EggDonorPage() {
     <DonorLanding
       c={{
         type: "egg",
+        label: "egg",
         hero: {
           eyebrow: "Egg donation",
           title: (
             <>
-              Become an egg donor. Help shape <Em>a family&apos;s future.</Em>
+              Your eggs. Someone&apos;s whole <Em>family.</Em>
             </>
           ),
-          subtitle: `Compensation: ${SITE.eggComp}. Help someone build their family — with a dedicated coordinator by your side.`,
+          subtitle: `${SITE.eggComp}. Every medical cost covered. One coordinator who has your back from first click to retrieval.`,
         },
         comp: {
           amount: SITE.eggComp,
@@ -31,55 +32,56 @@ export default function EggDonorPage() {
             "Independent legal consultation",
             "Complication insurance for your cycle",
           ],
+          note: "For your time, effort and commitment. The exact amount depends on the program.",
         },
         steps: [
-          { title: "Pre-screen", body: "Answer a few basic questions online (about 3 minutes)." },
+          { title: "Pre-screen", body: "A few basic questions online. About 3 minutes." },
           {
             title: "Full application",
-            body: "Complete your profile, health history and photos in your secure portal.",
+            body: "Profile, health history and photos — all in your secure portal.",
           },
           {
             title: "Video interview",
-            body: "Meet your coordinator on a short video call to talk through the process.",
+            body: "A quick video call with your coordinator. Ask anything.",
           },
           {
             title: "Matching",
-            body: "Your anonymous profile is shared with intended parents who are looking for a donor.",
+            body: "Intended parents looking for a donor see your anonymous profile.",
           },
           {
             title: "Medical & psychological evaluation",
-            body: "Blood work, ultrasound, genetic testing and a session with a mental-health professional at a partner clinic.",
+            body: "At a partner clinic: blood work, ultrasound, genetic testing and a chat with a mental-health professional.",
           },
           {
             title: "Legal contract",
-            body: "You sign an agreement reviewed by your own independent attorney, at no cost to you.",
+            body: "Your own independent attorney reviews the agreement. You don't pay for it.",
           },
           {
             title: "Ovarian stimulation (about 10–14 days)",
-            body: "Daily hormone injections with regular monitoring appointments.",
+            body: "Daily hormone injections, plus regular monitoring appointments.",
           },
           {
             title: "Egg retrieval",
-            body: "A short outpatient procedure under light sedation (about 20–30 minutes).",
+            body: "A short outpatient procedure under light sedation — about 20–30 minutes.",
           },
-          { title: "Payment", body: "Your compensation is paid after the retrieval is complete." },
+          { title: "Payment", body: "Retrieval done? Your compensation gets paid." },
         ],
         concerns: [
           {
             title: "Is it safe?",
-            body: "Egg donation is a well-established procedure performed by experienced physicians. As with any medical treatment, there are risks — such as ovarian hyperstimulation syndrome (OHSS) or reactions to medication — which the clinic monitors closely. The clinic will review all risks with you before you agree.",
+            body: "It's a well-established procedure done by experienced physicians. It still has risks — like ovarian hyperstimulation syndrome (OHSS) or medication reactions — and the clinic watches for them closely. They'll go through every risk with you before you say yes.",
           },
           {
-            title: "Does it hurt?",
-            body: "Injections use small needles and most donors adjust quickly. Retrieval is done under sedation. Afterward, cramping and bloating for a few days is common.",
+            title: "Will it hurt?",
+            body: "The injection needles are small, and most donors get used to them fast. Retrieval happens under sedation. A few days of cramping and bloating afterward is common.",
           },
           {
-            title: "Will it affect my future fertility?",
-            body: "Current research has not found that egg donation reduces fertility in healthy donors, but long-term data is still limited. Please discuss your personal situation with a physician.",
+            title: "What about my own fertility?",
+            body: "Research so far hasn't found that egg donation lowers fertility in healthy donors. Long-term data is still limited, though — talk it through with a physician.",
           },
           {
-            title: "Will I be anonymous?",
-            body: "Most donations are anonymous. Some families request a known or open-ID arrangement; you'll always know which before you agree, and it will be in your contract.",
+            title: "Does anyone find out it's me?",
+            body: "Most donations are anonymous. Some families ask for a known or open-ID setup. You'll know which before you agree, and it's in your contract.",
           },
         ],
       }}

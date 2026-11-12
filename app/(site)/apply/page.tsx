@@ -5,8 +5,8 @@ import { cn } from "@/lib/utils";
 import { SITE, spermComp } from "@/config/site";
 
 export const metadata: Metadata = {
-  title: "Apply to Become a Donor",
-  description: `Choose your program: apply to become an egg donor (${SITE.eggComp}) or a sperm donor with ${SITE.brand}. The pre-screen takes about 3 minutes.`,
+  title: "Apply: Egg or Sperm Donor?",
+  description: `Egg donor (${SITE.eggComp}) or sperm donor? Pick one and start the ${SITE.brand} pre-screen — about 3 minutes.`,
   alternates: { canonical: "/apply" },
 };
 
@@ -16,61 +16,65 @@ const OPTIONS = [
     title: "Egg donor",
     comp: SITE.eggComp,
     learn: "/egg-donor",
-    band: "bg-accent text-accent-foreground",
+    band: "bg-sun",
+    tilt: "md:-rotate-1",
   },
   {
     href: "/apply/sperm",
     title: "Sperm donor",
     comp: spermComp,
     learn: "/sperm-donor",
-    band: "bg-primary text-sun",
+    band: "bg-mint",
+    tilt: "md:rotate-1",
   },
 ];
 
 export default function ApplyChooserPage() {
   return (
-    <div className="bg-dots">
-      <div className="mx-auto max-w-5xl px-4 py-14 md:py-24">
-        <p className="text-accent-strong flex items-center gap-3 text-xs font-bold tracking-[0.24em] uppercase">
-          <span className="bg-accent size-2.5" aria-hidden />
-          Apply
-        </p>
-        <h1 className="text-primary mt-4 text-[2.25rem] leading-[1.05] font-bold md:text-6xl">
-          Which program are you applying for?
+    <div className="bg-grain">
+      <div className="mx-auto max-w-5xl px-4 py-12 md:py-20">
+        <p className="tag">Apply</p>
+        <h1 className="mt-4 text-[2.4rem] leading-[1.04] font-extrabold md:text-6xl">
+          Pick your <em className="em-sticker">program.</em>
         </h1>
-        <p className="text-muted mt-5 text-lg">The pre-screen takes about 3 minutes.</p>
-        <div className="mt-12 grid gap-8 md:grid-cols-2">
+        <p className="mt-5 text-lg font-medium">
+          Two programs. One quick pre-screen — about 3 minutes. Choose your side.
+        </p>
+        <div className="mt-12 grid gap-10 md:grid-cols-2">
           {OPTIONS.map((o, i) => (
             <div
               key={o.href}
-              className="border-primary bg-card shadow-hard flex flex-col overflow-hidden rounded-lg border-2"
+              className={cn(
+                "border-ink flex flex-col overflow-hidden rounded-[18px] border-4 bg-white shadow-[8px_8px_0_0_#111]",
+                o.tilt,
+              )}
             >
-              <div className={cn("flex items-end justify-between gap-4 px-6 py-5", o.band)}>
-                <h2 className="text-3xl font-bold">{o.title}</h2>
-                <span
-                  aria-hidden
-                  className="font-display text-5xl leading-none font-bold tracking-tighter opacity-80"
-                >
-                  {String(i + 1).padStart(2, "0")}
+              <div
+                className={cn(
+                  "border-ink flex items-center justify-between gap-4 border-b-4 px-6 py-5",
+                  o.band,
+                )}
+              >
+                <h2 className="text-3xl font-extrabold">{o.title}</h2>
+                <span className="tag" aria-hidden>
+                  Option {i + 1}
                 </span>
               </div>
               <div className="flex flex-1 flex-col p-6">
-                <p className="text-muted text-xs font-bold tracking-[0.2em] uppercase">
-                  Compensation
-                </p>
-                <p className="text-primary font-display mt-1 text-xl font-bold">{o.comp}</p>
-                <div className="mt-auto pt-6">
+                <p className="text-xs font-extrabold tracking-[0.12em] uppercase">Compensation</p>
+                <p className="mt-1 text-xl font-extrabold">{o.comp}</p>
+                <div className="mt-auto pt-7">
                   <Link
                     href={o.href}
-                    className="bg-accent text-accent-foreground border-primary font-display hover:bg-sun inline-flex h-13 w-full items-center justify-center gap-2 rounded-md border-2 font-bold transition-colors"
+                    className="bg-accent text-ink border-ink hover:bg-sun inline-flex h-14 w-full items-center justify-center gap-2 rounded-[10px] border-3 font-extrabold shadow-[4px_4px_0_0_#111] transition-[transform,box-shadow,background-color] hover:shadow-[2px_2px_0_0_#111] motion-safe:hover:translate-x-[2px] motion-safe:hover:translate-y-[2px]"
                   >
                     Apply as {o.title.toLowerCase()} <ArrowRight className="size-4" aria-hidden />
                   </Link>
                   <Link
                     href={o.learn}
-                    className="text-primary decoration-accent mt-3 block py-1 text-center text-sm font-semibold underline decoration-2 underline-offset-4"
+                    className="mt-4 block py-1 text-center text-sm font-bold underline decoration-2 underline-offset-4"
                   >
-                    Learn about the program first
+                    Not sure yet? Read up first
                   </Link>
                 </div>
               </div>

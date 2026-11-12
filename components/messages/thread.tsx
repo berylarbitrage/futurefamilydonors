@@ -35,10 +35,8 @@ export function MessageThread({
           <li key={m.id} className={cn("flex", mine ? "justify-end" : "justify-start")}>
             <div
               className={cn(
-                "max-w-[85%] rounded-2xl px-4 py-3 text-sm shadow-sm",
-                mine
-                  ? "bg-primary-soft rounded-br-md"
-                  : "border-border bg-card rounded-bl-md border",
+                "border-ink max-w-[85%] rounded-[14px] border-3 px-4 py-3 text-sm shadow-[3px_3px_0_0_#111]",
+                mine ? "bg-sun rounded-br-sm" : "rounded-bl-sm bg-white",
               )}
             >
               <p className="text-muted mb-1 text-xs">

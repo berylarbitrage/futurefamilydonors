@@ -20,7 +20,7 @@ export const SITE = {
   referralBonus: "$500", // {{REFERRAL_BONUS}}
   serviceArea: "Serving donors across the U.S. and internationally",
   tagline:
-    "The future of family starts with you. Become an egg or sperm donor and be compensated for your time and commitment.",
+    "You could make someone a parent. Become an egg or sperm donor — and get compensated for your time and commitment.",
   subtitle: "Egg & Sperm Donation",
 } as const;
 

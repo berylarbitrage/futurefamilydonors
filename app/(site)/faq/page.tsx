@@ -8,9 +8,9 @@ import { FAQ, type FaqGroup } from "@/content/faq";
 import { faqJsonLd } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Frequently Asked Questions",
+  title: "FAQ: Real Answers for Donors",
   description:
-    "Answers to common questions about egg donation, sperm donation, compensation, and privacy.",
+    "Straight answers on egg donation, sperm donation, pay, privacy and what happens after you apply.",
   alternates: { canonical: "/faq" },
 };
 
@@ -22,32 +22,46 @@ export default function FaqPage() {
     <>
       <JsonLd data={faqJsonLd(all)} />
       <Section
-        title="Frequently Asked Questions"
-        intro="Can't find your answer? Contact us any time."
+        eyebrow="FAQ"
+        title={
+          <>
+            Questions? <em className="em-sticker">Answers.</em>
+          </>
+        }
+        intro={
+          <>
+            Can&apos;t find yours?{" "}
+            <Link href="/contact" className="font-bold underline decoration-2 underline-offset-4">
+              Contact us
+            </Link>{" "}
+            any time.
+          </>
+        }
       >
         <nav aria-label="FAQ sections" className="mb-10 flex flex-wrap gap-2">
           {ORDER.map((g) => (
             <a
               key={g}
               href={`#${g}`}
-              className="border-primary bg-card text-primary hover:bg-primary hover:text-primary-foreground font-display rounded-md border-2 px-4 py-2 text-sm font-bold"
+              className="border-ink hover:bg-sun rounded-[10px] border-3 bg-white px-4 py-2 text-sm font-extrabold shadow-[3px_3px_0_0_#111]"
             >
               {FAQ[g].title}
             </a>
           ))}
         </nav>
-        <div className="space-y-12">
+        <div className="max-w-4xl space-y-14">
           {ORDER.map((g) => (
             <div key={g} id={g} className="scroll-mt-24">
-              <h2 className="text-primary mb-5 flex items-center gap-3 text-2xl font-bold md:text-3xl">
-                <span className="bg-accent size-3" aria-hidden />
-                {FAQ[g].title}
+              <h2 className="mb-6 text-2xl font-extrabold md:text-3xl">
+                <span className="bg-sun border-ink inline-block -rotate-1 rounded-lg border-3 px-3 py-0.5 shadow-[3px_3px_0_0_#111]">
+                  {FAQ[g].title}
+                </span>
               </h2>
               <FaqList items={FAQ[g].items} />
             </div>
           ))}
         </div>
-        <div className="mt-12 flex flex-col gap-3 sm:flex-row">
+        <div className="mt-14 flex flex-col gap-4 sm:flex-row">
           <Button asChild>
             <Link href="/apply/egg">Apply as an Egg Donor</Link>
           </Button>

@@ -302,8 +302,11 @@ export function PrescreenForm({
 
   if (blocked) {
     return (
-      <div role="status" className="bg-card border-primary rounded-lg border-2 p-8 text-center">
-        <h2 className="text-2xl font-semibold">Thank you for your interest</h2>
+      <div
+        role="status"
+        className="border-ink rounded-[16px] border-3 bg-white p-8 text-center shadow-[6px_6px_0_0_#111]"
+      >
+        <h2 className="text-2xl font-extrabold">Thank you for your interest</h2>
         <p className="text-muted mt-3">
           You must be at least {MIN_APPLICANT_AGE} years old to apply to become a donor. We
           haven&apos;t saved any of your information. We&apos;d love to hear from you once you meet
@@ -328,13 +331,14 @@ export function PrescreenForm({
   });
 
   return (
-    <div className="bg-card border-primary shadow-hard rounded-lg border-2 p-5 sm:p-8">
+    <div className="border-ink rounded-[16px] border-3 bg-white p-5 shadow-[6px_6px_0_0_#111] sm:p-8">
       <div className="mb-6">
         <div className="mb-2 flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
-          <span className="font-medium">
-            Step {step + 1} of 3 · {STEP_TITLES[step]}
+          <span className="font-bold">
+            <span className="tag mr-2">Step {step + 1} of 3</span>
+            {STEP_TITLES[step]}
           </span>
-          <span className="text-muted flex items-center gap-1">
+          <span className="flex items-center gap-1 font-medium">
             <Clock className="size-4" aria-hidden /> Takes about 3 minutes
           </span>
         </div>
@@ -344,18 +348,17 @@ export function PrescreenForm({
           aria-valuemin={0}
           aria-valuemax={100}
           aria-label="Application progress"
-          className="bg-muted-bg h-2 overflow-hidden rounded-sm"
+          className="flex gap-2"
         >
-          <div
-            className="bg-accent h-full rounded-sm transition-all"
-            style={{ width: `${pct}%` }}
-          />
+          {[0, 1, 2].map((i) => (
+            <span key={i} className="seg" data-on={i <= step} aria-hidden />
+          ))}
         </div>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="relative space-y-5">
         <Honeypot name="website" value={honeypot} onChange={(ev) => setHoneypot(ev.target.value)} />
-        <h2 ref={headingRef} tabIndex={-1} className="text-2xl font-semibold outline-none">
+        <h2 ref={headingRef} tabIndex={-1} className="text-2xl font-extrabold outline-none">
           {STEP_TITLES[step]}
         </h2>
 
@@ -479,7 +482,7 @@ export function PrescreenForm({
         {step === 1 && (
           <>
             <fieldset className="space-y-2">
-              <legend className="text-sm font-medium">
+              <legend className="text-sm font-bold">
                 Height<span className="text-destructive"> *</span>
               </legend>
               <div className="grid grid-cols-2 gap-3">
@@ -583,8 +586,8 @@ export function PrescreenForm({
               register={register("previousDonation")}
             />
             {donatedBefore && (
-              <div className="border-primary/30 bg-primary-soft/40 space-y-5 rounded-xl border-l-4 p-4">
-                <p className="text-sm font-medium">Tell us about your previous donations</p>
+              <div className="border-ink bg-sun-soft space-y-5 rounded-[12px] border-3 border-dashed p-4">
+                <p className="text-sm font-bold">Tell us about your previous donations</p>
                 <Field
                   id="prevDonationCount"
                   label="How many times have you donated?"
@@ -637,7 +640,7 @@ export function PrescreenForm({
                     err("prevPregnancyKnown") ? "prevPregnancyKnown-error" : undefined
                   }
                 >
-                  <legend className="text-sm font-medium">
+                  <legend className="text-sm font-bold">
                     Do you know if a pregnancy resulted?
                     <span className="text-destructive"> *</span>
                   </legend>
@@ -651,7 +654,7 @@ export function PrescreenForm({
                     ).map(([v, l]) => (
                       <label
                         key={v}
-                        className="border-input bg-card has-[:checked]:border-primary has-[:checked]:bg-primary has-[:checked]:text-primary-foreground flex h-11 cursor-pointer items-center justify-center rounded-md border-2 text-sm font-semibold has-[:focus-visible]:outline-2"
+                        className="border-ink bg-card has-[:checked]:bg-sun has-[:focus-visible]:outline-ring flex h-12 cursor-pointer items-center justify-center rounded-[10px] border-3 text-sm font-bold has-[:checked]:shadow-[3px_3px_0_0_#111] has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2"
                       >
                         <input
                           type="radio"
@@ -734,7 +737,7 @@ export function PrescreenForm({
             <label className="flex items-start gap-3 text-sm">
               <input
                 type="checkbox"
-                className="mt-1 size-4 shrink-0 accent-[var(--primary)]"
+                className="mt-1 size-4 shrink-0 accent-[#111]"
                 {...register("smsConsent")}
               />
               <span className="text-muted">
@@ -748,7 +751,7 @@ export function PrescreenForm({
               <label className="flex items-start gap-3 text-sm">
                 <input
                   type="checkbox"
-                  className="mt-1 size-4 shrink-0 accent-[var(--primary)]"
+                  className="mt-1 size-4 shrink-0 accent-[#111]"
                   aria-invalid={!!e.privacyConsent}
                   {...register("privacyConsent")}
                 />
@@ -799,7 +802,10 @@ export function PrescreenForm({
         )}
 
         {serverError && (
-          <p role="alert" className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
+          <p
+            role="alert"
+            className="border-destructive bg-accent-soft text-destructive rounded-[10px] border-3 p-3 text-sm font-semibold"
+          >
             {serverError}
           </p>
         )}

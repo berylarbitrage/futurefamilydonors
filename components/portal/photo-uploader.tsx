@@ -80,7 +80,7 @@ export function PhotoUploader({
       </p>
       {(["childhood", "recent"] as const).map((kind) => (
         <div key={kind}>
-          <h3 className="mb-2 font-sans font-semibold capitalize">{kind} photos</h3>
+          <h3 className="mb-3 font-extrabold capitalize">{kind} photos</h3>
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {photos
               .filter((p) => p.kind === kind)
@@ -93,10 +93,10 @@ export function PhotoUploader({
                       width={200}
                       height={200}
                       unoptimized
-                      className="aspect-square w-full rounded-lg object-cover"
+                      className="border-ink aspect-square w-full rounded-[12px] border-3 object-cover"
                     />
                   ) : (
-                    <div className="bg-muted-bg aspect-square rounded-lg" />
+                    <div className="bg-muted-bg border-ink aspect-square rounded-[12px] border-3" />
                   )}
                   {!readOnly && (
                     <Button
@@ -115,7 +115,7 @@ export function PhotoUploader({
               ))}
             {!readOnly && remaining > 0 && (
               <li>
-                <label className="border-border text-muted hover:border-primary has-[:focus-visible]:outline-ring flex aspect-square cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed text-sm has-[:focus-visible]:outline-2">
+                <label className="border-ink hover:bg-sun has-[:focus-visible]:outline-ring flex aspect-square cursor-pointer flex-col items-center justify-center gap-2 rounded-[12px] border-3 border-dashed bg-white text-sm font-bold has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2">
                   <Upload className="size-6" aria-hidden />
                   {busy === kind ? "Uploading…" : `Add ${kind} photo`}
                   <input

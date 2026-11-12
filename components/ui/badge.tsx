@@ -2,10 +2,10 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 const tones = {
-  neutral: "bg-muted-bg text-foreground",
-  success: "bg-primary-soft text-primary",
-  warn: "bg-sun-soft text-foreground",
-  danger: "bg-destructive/10 text-destructive",
+  neutral: "bg-card text-ink",
+  success: "bg-mint text-ink",
+  warn: "bg-sun text-ink",
+  danger: "bg-accent-soft text-destructive",
 } as const;
 
 export function Badge({
@@ -16,7 +16,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-semibold tracking-wide",
+        "border-ink inline-flex items-center rounded-md border-2 px-2 py-0.5 text-xs font-bold tracking-wide",
         tones[tone],
         className,
       )}

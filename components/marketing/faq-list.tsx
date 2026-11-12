@@ -1,26 +1,26 @@
 import type { FaqItem } from "@/content/faq";
 import { Plus } from "lucide-react";
 
-/** Accessible accordion built on <details>, works without JS. */
+/** Accessible accordion built on <details>, works without JS. Each item is its own sticker box. */
 export function FaqList({ items }: { items: FaqItem[] }) {
   return (
-    <div className="divide-primary/15 border-primary bg-card divide-y-2 rounded-lg border-2">
+    <div className="space-y-4">
       {items.map((item) => (
         <details
           key={item.q}
-          className="group open:bg-sun-soft/50 px-5 py-4 [&_summary::-webkit-details-marker]:hidden"
+          className="group border-ink bg-card open:bg-sun-soft rounded-[14px] border-3 shadow-[4px_4px_0_0_#111] [&_summary::-webkit-details-marker]:hidden"
         >
-          <summary className="font-display flex cursor-pointer list-none items-center justify-between gap-4 text-lg font-semibold">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded-[11px] px-5 py-4 text-lg font-bold">
             <span>{item.q}</span>
-            <span className="border-primary group-open:bg-primary group-open:text-sun flex size-8 shrink-0 items-center justify-center rounded-md border-2 transition-colors">
+            <span className="border-ink bg-sun group-open:bg-accent flex size-9 shrink-0 items-center justify-center rounded-lg border-3 transition-colors">
               <Plus
                 aria-hidden
                 className="size-4 transition-transform group-open:rotate-45 motion-reduce:transition-none"
-                strokeWidth={3}
+                strokeWidth={3.5}
               />
             </span>
           </summary>
-          <p className="text-muted mt-3 max-w-3xl">{item.a}</p>
+          <p className="max-w-3xl px-5 pb-5">{item.a}</p>
         </details>
       ))}
     </div>

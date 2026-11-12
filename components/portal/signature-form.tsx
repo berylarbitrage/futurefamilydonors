@@ -30,9 +30,12 @@ export function SignatureForm({
 
   if (submitted) {
     return (
-      <div role="status" className="bg-primary-soft rounded-xl p-6">
-        <CheckCircle2 className="text-primary size-8" aria-hidden />
-        <p className="mt-2 font-semibold">Your application has been submitted.</p>
+      <div
+        role="status"
+        className="bg-mint border-ink rounded-[14px] border-3 p-6 shadow-[4px_4px_0_0_#111]"
+      >
+        <CheckCircle2 className="size-8" aria-hidden />
+        <p className="mt-2 font-extrabold">Your application has been submitted.</p>
         <p className="text-muted text-sm">
           Your coordinator will review it and reach out with next steps.
         </p>
@@ -42,8 +45,8 @@ export function SignatureForm({
 
   if (missing.length) {
     return (
-      <div className="bg-accent-soft rounded-xl p-5 text-sm">
-        <p className="font-semibold">Almost there! Please complete these sections first:</p>
+      <div className="bg-sun border-ink rounded-[14px] border-3 p-5 text-sm">
+        <p className="font-extrabold">Almost there! Please complete these sections first:</p>
         <ul className="mt-2 list-disc pl-5">
           {missing.map((m) => (
             <li key={m}>{m}</li>
@@ -69,7 +72,7 @@ export function SignatureForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
-      <div className="border-border bg-muted-bg rounded-xl border p-4 text-sm">
+      <div className="border-ink bg-muted-bg rounded-[12px] border-3 p-4 text-sm">
         I certify that the information in this application is true and complete to the best of my
         knowledge. I understand that providing false information may disqualify me, that
         pre-screening does not guarantee acceptance, and that final eligibility is determined by
@@ -80,7 +83,7 @@ export function SignatureForm({
       <label className="flex items-start gap-3 text-sm">
         <input
           type="checkbox"
-          className="mt-1 size-4 accent-[var(--primary)]"
+          className="mt-1 size-4 accent-[#111]"
           aria-invalid={!!errors.attest}
           {...register("attest")}
         />

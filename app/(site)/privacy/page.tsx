@@ -9,13 +9,13 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <Section title="Privacy Policy">
-      <div className="prose-legal max-w-3xl">
-        <p className="bg-accent-soft rounded-lg p-3 text-sm font-semibold">
+    <Section eyebrow="Legal" title="Privacy Policy">
+      <div className="prose-legal border-ink max-w-3xl rounded-[16px] border-3 bg-white p-6 shadow-[6px_6px_0_0_#111] md:p-10">
+        <p className="bg-sun border-ink rounded-[10px] border-3 p-3 text-sm font-bold">
           DRAFT — PLACEHOLDER TEXT. This policy must be reviewed by a qualified attorney before
           launch.
         </p>
-        <p className="text-muted text-sm">Last updated: [DATE]</p>
+        <p className="text-sm font-medium">Last updated: [DATE]</p>
 
         <h2>1. Who we are</h2>
         <p>

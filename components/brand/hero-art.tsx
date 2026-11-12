@@ -1,176 +1,136 @@
-import { useId } from "react";
-
-const CORAL = "#FF5A3C";
-const SUN = "#FFC53D";
+const INK = "#111111";
+const SUN = "#FFDE59";
+const CORAL = "#FF7A59";
+const MINT = "#7EE8C4";
+const LAV = "#C8B8FF";
 const WHITE = "#FFFFFF";
 
-/** Shared orbit rings + slowly rotating "planets". Centred at (240, 220). */
-function Orbits({ dots = true }: { dots?: boolean }) {
+const S = { stroke: INK, strokeWidth: 5, strokeLinejoin: "round" as const };
+
+function Star({ x, y, r = 22, fill = WHITE }: { x: number; y: number; r?: number; fill?: string }) {
+  // 5-point star centred on (x, y).
+  const pts: string[] = [];
+  for (let i = 0; i < 10; i++) {
+    const a = (Math.PI / 5) * i - Math.PI / 2;
+    const rr = i % 2 === 0 ? r : r * 0.45;
+    pts.push(`${(x + rr * Math.cos(a)).toFixed(1)},${(y + rr * Math.sin(a)).toFixed(1)}`);
+  }
+  return <polygon points={pts.join(" ")} fill={fill} {...S} strokeWidth={4} />;
+}
+
+function Sparkle({ x, y, s = 1 }: { x: number; y: number; s?: number }) {
   return (
-    <>
-      <circle cx="240" cy="220" r="206" stroke={WHITE} strokeOpacity="0.1" strokeWidth="1.5" />
-      <circle
-        cx="240"
-        cy="220"
-        r="168"
-        stroke={WHITE}
-        strokeOpacity="0.22"
-        strokeWidth="1.5"
-        strokeDasharray="2 8"
-      />
-      {dots && (
-        <g className="animate-orbit" style={{ transformOrigin: "240px 220px" }}>
-          <circle cx="240" cy="52" r="7" fill={SUN} />
-          <circle cx="385.5" cy="304" r="5" fill={WHITE} />
-          <circle cx="94.5" cy="304" r="4" fill={CORAL} />
-        </g>
-      )}
-    </>
+    <path
+      d={`M${x} ${y - 16 * s}Q${x + 3 * s} ${y - 3 * s} ${x + 16 * s} ${y}Q${x + 3 * s} ${y + 3 * s} ${x} ${y + 16 * s}Q${x - 3 * s} ${y + 3 * s} ${x - 16 * s} ${y}Q${x - 3 * s} ${y - 3 * s} ${x} ${y - 16 * s}Z`}
+      fill={SUN}
+      {...S}
+      strokeWidth={3.5}
+    />
   );
 }
 
-/** A small constellation: dots joined by thin lines. */
-function Constellation({
-  points,
-  x = 0,
-  y = 0,
-}: {
-  points: [number, number][];
-  x?: number;
-  y?: number;
-}) {
-  const d = points.map(([px, py], i) => `${i ? "L" : "M"}${px + x} ${py + y}`).join(" ");
-  return (
-    <g>
-      <path d={d} stroke={WHITE} strokeOpacity="0.45" strokeWidth="1.5" />
-      {points.map(([px, py], i) => (
-        <circle
-          key={i}
-          cx={px + x}
-          cy={py + y}
-          r={i === points.length - 1 ? 5.5 : 4}
-          fill={i === points.length - 1 ? SUN : WHITE}
-          className={i === 1 ? "animate-blink" : undefined}
-        />
-      ))}
-    </g>
-  );
-}
-
-/** Abstract geometric hero illustrations (navy backgrounds). Inline SVG only. */
+/** Chunky abstract shapes in a white bordered panel (neo-brutalist). Inline SVG only. */
 export function HeroArt({ variant }: { variant: "home" | "egg" | "sperm" }) {
-  const id = useId().replace(/:/g, "");
   return (
-    <div className="relative mx-auto aspect-[12/11] w-full max-w-[16rem] sm:max-w-md" aria-hidden>
-      <svg viewBox="0 0 480 440" className="absolute inset-0 h-full w-full" fill="none">
-        <defs>
-          <clipPath id={`sun-${id}`}>
-            <rect x="0" y="0" width="480" height="330" />
-          </clipPath>
-        </defs>
+    <div
+      className="border-ink relative mx-auto w-full max-w-[22rem] rounded-2xl border-3 bg-white shadow-[6px_6px_0_0_#111] sm:max-w-md"
+      aria-hidden
+    >
+      <svg viewBox="0 0 440 400" className="block h-auto w-full" fill="none">
+        {/* faint dot grid */}
+        <g fill={INK} fillOpacity="0.12">
+          {Array.from({ length: 8 }).map((_, r) =>
+            Array.from({ length: 9 }).map((__, c) => (
+              <circle key={`${r}-${c}`} cx={30 + c * 48} cy={28 + r * 48} r="2" />
+            )),
+          )}
+        </g>
 
         {variant === "home" && (
           <>
-            <Orbits />
-            {/* rising sun with horizon stripes */}
-            <g clipPath={`url(#sun-${id})`}>
-              <circle cx="240" cy="300" r="128" fill={CORAL} />
-            </g>
-            <g fill="#0E1A3A">
-              <rect x="100" y="262" width="280" height="6" />
-              <rect x="100" y="282" width="280" height="9" />
-              <rect x="100" y="306" width="280" height="12" />
-            </g>
-            <path d="M40 330H440" stroke={WHITE} strokeWidth="3" />
-            <path d="M88 352H392" stroke={WHITE} strokeOpacity="0.35" strokeWidth="2" />
-            <path d="M136 372H344" stroke={WHITE} strokeOpacity="0.2" strokeWidth="2" />
-            {/* family constellation above the horizon */}
-            <Constellation
-              points={[
-                [70, 120],
-                [128, 78],
-                [196, 112],
-                [154, 150],
-              ]}
-            />
-            <circle cx="372" cy="112" r="30" fill={SUN} />
             <rect
-              x="356"
-              y="196"
-              width="34"
-              height="34"
-              stroke={SUN}
-              strokeWidth="3"
-              transform="rotate(18 373 213)"
+              x="300"
+              y="250"
+              width="86"
+              height="86"
+              rx="10"
+              fill={LAV}
+              {...S}
+              transform="rotate(12 343 293)"
             />
+            <circle cx="160" cy="180" r="92" fill={SUN} {...S} />
+            <circle cx="268" cy="180" r="92" fill={CORAL} {...S} />
+            {/* overlap lens re-drawn so the outlines read clearly */}
+            <path d="M214 105.5A92 92 0 0 1 214 254.5A92 92 0 0 1 214 105.5Z" fill={WHITE} {...S} />
+            <circle cx="214" cy="292" r="54" fill={MINT} {...S} />
+            <g className="animate-wobble">
+              <Star x={362} y={70} r={32} />
+            </g>
+            <path
+              d="M40 330c18-22 36 22 54 0s36 22 54 0"
+              stroke={INK}
+              strokeWidth="6"
+              strokeLinecap="round"
+            />
+            <Sparkle x={66} y={70} />
           </>
         )}
 
         {variant === "egg" && (
           <>
-            <Orbits />
-            <circle cx="240" cy="220" r="118" stroke={CORAL} strokeWidth="26" />
-            <circle cx="240" cy="220" r="72" fill={SUN} />
-            <circle cx="240" cy="220" r="24" fill="#0E1A3A" />
-            <circle cx="240" cy="220" r="24" stroke={WHITE} strokeWidth="3" />
-            <path
-              d="M240 20V60M240 380V420M40 220H80M400 220H440"
-              stroke={WHITE}
-              strokeOpacity="0.5"
-              strokeWidth="2"
+            <circle cx="340" cy="300" r="56" fill={MINT} {...S} />
+            <ellipse cx="200" cy="205" rx="118" ry="148" fill={WHITE} {...S} />
+            <ellipse
+              cx="200"
+              cy="205"
+              rx="118"
+              ry="148"
+              fill={SUN}
+              {...S}
+              transform="translate(-10 -8)"
             />
-            <Constellation
-              x={300}
-              y={300}
-              points={[
-                [20, 40],
-                [70, 10],
-                [120, 50],
-              ]}
-            />
+            <circle cx="190" cy="215" r="58" fill={CORAL} {...S} />
+            <circle cx="172" cy="196" r="14" fill={WHITE} stroke={INK} strokeWidth="4" />
+            <g className="animate-wobble">
+              <Star x={362} y={84} r={30} />
+            </g>
+            <Sparkle x={58} y={330} s={1.2} />
+            <Sparkle x={380} y={190} s={0.8} />
           </>
         )}
 
         {variant === "sperm" && (
           <>
-            <Orbits dots={false} />
-            <circle cx="320" cy="170" r="96" fill={CORAL} />
-            <circle cx="320" cy="170" r="132" stroke={WHITE} strokeOpacity="0.35" strokeWidth="2" />
-            {/* motion trajectories heading toward the circle */}
-            <path
-              d="M24 420C120 380 150 300 236 250"
-              stroke={WHITE}
-              strokeOpacity="0.25"
-              strokeWidth="3"
+            <rect
+              x="48"
+              y="56"
+              width="96"
+              height="96"
+              rx="12"
+              fill={LAV}
+              {...S}
+              transform="rotate(-10 96 104)"
             />
+            <circle cx="300" cy="170" r="96" fill={CORAL} {...S} />
+            <circle cx="300" cy="170" r="40" fill={SUN} {...S} />
+            {/* chunky wavy path heading into the circle */}
             <path
-              d="M24 380C110 352 150 282 224 226"
-              stroke={WHITE}
-              strokeOpacity="0.45"
-              strokeWidth="3"
-            />
-            <path
-              d="M40 344C120 318 160 250 230 204"
-              stroke={SUN}
-              strokeWidth="5"
+              d="M36 344c40-40 70 20 110-20s70 20 110-30"
+              stroke={INK}
+              strokeWidth="16"
               strokeLinecap="round"
             />
-            <circle cx="236" cy="200" r="11" fill={SUN} />
-            <g fill={WHITE}>
-              <circle cx="70" cy="334" r="4" />
-              <circle cx="122" cy="310" r="4" />
-              <circle cx="168" cy="268" r="4" className="animate-blink" />
-            </g>
-            <rect
-              x="60"
-              y="80"
-              width="40"
-              height="40"
-              stroke={SUN}
-              strokeWidth="3"
-              transform="rotate(-12 80 100)"
+            <path
+              d="M36 344c40-40 70 20 110-20s70 20 110-30"
+              stroke={MINT}
+              strokeWidth="8"
+              strokeLinecap="round"
             />
-            <circle cx="150" cy="90" r="6" fill={WHITE} />
+            <circle cx="262" cy="292" r="22" fill={MINT} {...S} />
+            <g className="animate-wobble">
+              <Star x={382} y={330} r={28} />
+            </g>
+            <Sparkle x={196} y={64} />
           </>
         )}
       </svg>

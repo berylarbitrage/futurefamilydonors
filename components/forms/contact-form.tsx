@@ -38,16 +38,23 @@ export function ContactForm() {
 
   if (status === "sent") {
     return (
-      <div role="status" className="bg-primary-soft rounded-2xl p-6">
-        <CheckCircle2 className="text-primary size-8" aria-hidden />
-        <p className="mt-3 text-lg font-semibold">Thanks — we got your message.</p>
-        <p className="text-muted">We usually reply within one business day.</p>
+      <div
+        role="status"
+        className="bg-mint border-ink rounded-[16px] border-3 p-6 shadow-[5px_5px_0_0_#111]"
+      >
+        <CheckCircle2 className="size-8" aria-hidden />
+        <p className="mt-3 text-lg font-extrabold">Thanks — we got your message.</p>
+        <p className="font-medium">We usually reply within one business day.</p>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="relative space-y-5">
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      noValidate
+      className="border-ink relative space-y-5 rounded-[16px] border-3 bg-white p-6 shadow-[6px_6px_0_0_#111] md:p-8"
+    >
       <Honeypot {...register("website")} />
       <Field id="name" label="Your name" required error={errors.name?.message}>
         <Input id="name" autoComplete="name" aria-invalid={!!errors.name} {...register("name")} />

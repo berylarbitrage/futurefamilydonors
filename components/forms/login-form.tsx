@@ -35,10 +35,13 @@ export function LoginForm({ next }: { next: string }) {
 
   if (state === "sent") {
     return (
-      <div role="status" className="bg-primary-soft rounded-2xl p-6">
-        <MailCheck className="text-primary size-8" aria-hidden />
-        <p className="mt-3 font-semibold">Check your email</p>
-        <p className="text-muted text-sm">
+      <div
+        role="status"
+        className="bg-mint border-ink rounded-[16px] border-3 p-6 shadow-[5px_5px_0_0_#111]"
+      >
+        <MailCheck className="size-8" aria-hidden />
+        <p className="mt-3 font-extrabold">Check your email</p>
+        <p className="text-sm font-medium">
           If an account exists for {email}, we&apos;ve sent a secure sign-in link. It expires soon
           and can only be used once.
         </p>

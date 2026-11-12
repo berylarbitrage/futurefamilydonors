@@ -8,7 +8,7 @@ export function NativeSelect({ className, children, ...props }: React.ComponentP
     <div className="relative">
       <select
         className={cn(
-          "border-input bg-card text-foreground focus-visible:outline-ring aria-invalid:border-destructive focus-visible:border-primary flex h-11 w-full appearance-none rounded-md border-2 pr-9 pl-3 text-base focus-visible:outline-2",
+          "border-ink bg-card text-foreground focus-visible:outline-ring aria-invalid:border-destructive aria-invalid:bg-accent-soft flex h-12 w-full appearance-none rounded-[10px] border-3 pr-9 pl-3 text-base focus-visible:shadow-[3px_3px_0_0_#111] focus-visible:outline-3 focus-visible:outline-offset-2",
           className,
         )}
         {...props}
@@ -17,7 +17,7 @@ export function NativeSelect({ className, children, ...props }: React.ComponentP
       </select>
       <ChevronDown
         aria-hidden
-        className="text-muted pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2"
+        className="text-ink pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2"
       />
     </div>
   );

@@ -1,38 +1,36 @@
 import Link from "next/link";
-import { ArrowRight, Gift } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SITE } from "@/config/site";
 
+/** Giant yellow sticker block. */
 export function ReferralBanner() {
   return (
-    <section className="mx-auto max-w-6xl px-4 py-12 md:py-16">
-      <div className="border-primary bg-sun shadow-hard relative flex flex-col items-start gap-6 overflow-hidden rounded-lg border-2 p-7 md:flex-row md:items-center md:justify-between md:p-12">
+    <section className="mx-auto max-w-6xl px-4 py-14 md:py-20">
+      <div className="bg-sun border-ink relative overflow-hidden rounded-[22px] border-4 p-7 shadow-[10px_10px_0_0_#111] md:-rotate-1 md:p-14">
         <span
           aria-hidden
-          className="border-primary/20 absolute -right-16 -bottom-24 size-64 rounded-full border-[28px]"
+          className="border-ink bg-accent absolute -top-10 -right-10 hidden size-40 rounded-full border-4 md:block"
         />
-        <div className="relative flex items-start gap-4">
-          <span className="bg-primary text-sun flex size-12 shrink-0 items-center justify-center rounded-md">
-            <Gift className="size-6" aria-hidden />
-          </span>
-          <div>
-            <p className="text-primary text-xs font-bold tracking-[0.24em] uppercase">
-              Referral program
-            </p>
-            <h2 className="text-primary mt-1 text-3xl leading-tight font-bold md:text-4xl">
-              Refer a friend, earn {SITE.referralBonus}
-            </h2>
-            <p className="text-primary/85 mt-2 max-w-xl">
-              Know someone who&apos;d be a great donor? Share your link and earn a bonus when they
-              complete a donation.
-            </p>
-          </div>
+        <span
+          aria-hidden
+          className="border-ink bg-mint absolute right-24 -bottom-8 hidden size-24 rotate-12 rounded-xl border-4 md:block"
+        />
+        <div className="relative max-w-2xl">
+          <p className="tag">Bring a friend</p>
+          <h2 className="mt-4 text-4xl leading-[1.02] font-extrabold tracking-tight md:text-7xl">
+            Tag a friend. Pocket {SITE.referralBonus}.
+          </h2>
+          <p className="mt-4 max-w-xl text-lg font-medium">
+            One link. Send it to someone who&apos;d make a great donor. They complete a donation,
+            you get paid. That&apos;s the whole trick.
+          </p>
+          <Button asChild size="lg" className="mt-8">
+            <Link href="/refer">
+              Get My Link <ArrowRight aria-hidden />
+            </Link>
+          </Button>
         </div>
-        <Button asChild size="lg" variant="primary" className="relative">
-          <Link href="/refer">
-            Get My Referral Link <ArrowRight aria-hidden />
-          </Link>
-        </Button>
       </div>
     </section>
   );

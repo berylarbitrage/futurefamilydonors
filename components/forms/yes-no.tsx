@@ -19,7 +19,7 @@ export function YesNo({
 }) {
   return (
     <fieldset aria-describedby={error ? `${name}-error` : undefined} className="space-y-2">
-      <legend className="text-sm font-medium">
+      <legend className="text-sm font-bold">
         {legend}
         <span className="text-destructive"> *</span>
       </legend>
@@ -29,9 +29,9 @@ export function YesNo({
           <label
             key={v}
             className={cn(
-              "border-input bg-card flex h-11 flex-1 cursor-pointer items-center justify-center rounded-md border-2 text-sm font-semibold capitalize",
-              "has-[:checked]:border-primary has-[:checked]:bg-primary has-[:checked]:text-primary-foreground",
-              "has-[:focus-visible]:outline-ring has-[:focus-visible]:outline-2",
+              "border-ink bg-card flex h-12 flex-1 cursor-pointer items-center justify-center rounded-[10px] border-3 text-sm font-bold capitalize",
+              "has-[:checked]:bg-sun has-[:checked]:shadow-[3px_3px_0_0_#111]",
+              "has-[:focus-visible]:outline-ring has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2",
             )}
           >
             <input type="radio" value={v} className="sr-only" {...register} />

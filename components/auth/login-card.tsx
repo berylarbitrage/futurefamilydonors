@@ -22,25 +22,31 @@ export function LoginCard({
 }) {
   return (
     <div className="bg-background flex min-h-dvh items-center justify-center px-4 py-16">
-      <div className="border-primary bg-card shadow-hard w-full max-w-sm rounded-lg border-2 p-8">
+      <div className="border-ink w-full max-w-sm rounded-[16px] border-3 bg-white p-8 shadow-[6px_6px_0_0_#111]">
         <div className="mb-6 flex items-center gap-3">
-          <span className="bg-primary text-sun flex size-10 items-center justify-center rounded-md">
+          <span className="bg-sun border-ink flex size-10 items-center justify-center rounded-[10px] border-3">
             <Icon className="size-5" aria-hidden />
           </span>
           <div>
-            <p className="text-primary font-display font-bold">{SITE.brand}</p>
+            <p className="font-extrabold">{SITE.brand}</p>
             <p className="text-muted text-xs tracking-widest uppercase">{area}</p>
           </div>
         </div>
-        <h1 className="text-primary text-2xl font-bold">{title}</h1>
+        <h1 className="text-2xl font-extrabold">{title}</h1>
         <p className="text-muted mt-1 mb-6 text-sm">{intro}</p>
         {error === "link" && (
-          <p role="alert" className="bg-accent-soft mb-4 rounded-lg p-3 text-sm">
+          <p
+            role="alert"
+            className="bg-accent-soft border-ink mb-4 rounded-[10px] border-3 p-3 text-sm"
+          >
             That sign-in link is invalid or has expired. Please request a new one.
           </p>
         )}
         {wrongAccount && (
-          <p role="alert" className="bg-accent-soft mb-4 rounded-lg p-3 text-sm">
+          <p
+            role="alert"
+            className="bg-accent-soft border-ink mb-4 rounded-[10px] border-3 p-3 text-sm"
+          >
             {wrongAccount}
           </p>
         )}

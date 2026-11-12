@@ -179,7 +179,7 @@ export function SectionForm({
                 className="space-y-2"
                 aria-describedby={err ? `${f.name}-error` : undefined}
               >
-                <legend className="text-sm font-medium">
+                <legend className="text-sm font-bold">
                   {f.label}
                   {f.required && <span className="text-destructive"> *</span>}
                 </legend>
@@ -193,12 +193,12 @@ export function SectionForm({
                   {opts.map((o) => (
                     <label
                       key={o}
-                      className="border-border bg-card has-[:checked]:border-primary has-[:checked]:bg-primary-soft flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border px-3 text-sm"
+                      className="border-ink bg-card has-[:checked]:bg-sun has-[:focus-visible]:outline-ring flex min-h-12 cursor-pointer items-center gap-2 rounded-[10px] border-3 px-3 text-sm font-semibold has-[:checked]:shadow-[3px_3px_0_0_#111] has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2"
                     >
                       <input
                         type={f.kind === "yesno" ? "radio" : "checkbox"}
                         value={o}
-                        className="accent-[var(--primary)]"
+                        className="accent-[#111]"
                         {...register(f.name)}
                       />
                       {o}
@@ -253,7 +253,7 @@ export function SectionForm({
           return followUp ? (
             <div
               key={f.name}
-              className="border-primary/30 bg-primary-soft/40 -mt-2 rounded-xl border-l-4 p-4"
+              className="border-ink bg-sun-soft -mt-2 rounded-[12px] border-3 border-dashed p-4"
             >
               {control}
             </div>
@@ -275,7 +275,7 @@ export function SectionForm({
           >
             {saving === "draft" ? "Saving…" : "Save Draft"}
           </Button>
-          <span role="status" className="text-muted text-sm">
+          <span role="status" className="text-sm font-medium">
             {saving === "auto" ? "Saving…" : (status ?? "Your answers save automatically")}
           </span>
         </div>

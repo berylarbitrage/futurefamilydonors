@@ -2,58 +2,54 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Future Family Donors — "bold modern / optimistic future".
-   midnight navy #0E1A3A · coral #FF5A3C · sun yellow #FFC53D · cool off-white #F6F7FB
-   Coral is a fill colour: text on it is navy (5.5:1). Coral *text* on light
-   backgrounds uses the deeper --accent-strong (#C2381C, 5.1:1 on #F6F7FB).
+/* Future Family Donors — "neo-brutalist".
+   lavender page #C8B8FF · ink #111 · sticker yellow #FFDE59 · coral #FF7A59 · mint #7EE8C4
+   Thick black borders, hard (unblurred) offset shadows, slightly tilted "stickers".
+   Text on coral / yellow / mint / lavender is always ink (#111) for AA contrast.
    The site is always light; .dark is kept for possible future use only. */
 :root {
   color-scheme: light;
-  --primary: #0e1a3a; /* midnight navy — headings, brand, dark bands */
+  --primary: #111111; /* ink — headings, borders, shadows */
   --primary-foreground: #ffffff;
-  --accent: #ff5a3c; /* coral — CTA fills */
-  --accent-foreground: #0e1a3a; /* navy text on coral (AA) */
-  --accent-strong: #c2381c; /* coral for text/icons on light backgrounds */
-  --sun: #ffc53d; /* yellow — small highlights */
-  --background: #f6f7fb;
-  --foreground: #0e1a3a;
-  --muted: #4a5578;
-  --muted-bg: #eaedf6;
+  --accent: #ff7a59; /* coral — primary CTA fill */
+  --accent-foreground: #111111; /* ink on coral (7.9:1) */
+  --accent-strong: #111111; /* "accent" text stays ink on light fills */
+  --sun: #ffde59; /* sticker yellow */
+  --mint: #7ee8c4;
+  --lavender: #c8b8ff;
+  --background: #c8b8ff; /* page */
+  --foreground: #111111;
+  --muted: #34304a; /* secondary text: 7.3:1 on lavender, 12.6:1 on white */
+  --muted-bg: #f1ecff;
   --card: #ffffff;
-  --border: #d5dbea;
-  --input: #7a86a8; /* form-control borders (3:1 against white) */
-  --ring: #c2381c;
+  --border: #111111;
+  --input: #111111;
+  --ring: #111111;
   --destructive: #b42318;
-  --primary-soft: #e3e8f7; /* cool navy wash */
-  --accent-soft: #ffe7e0; /* coral wash */
-  --sun-soft: #fff3d1;
-  --navy-2: #18264f; /* raised surfaces on navy */
-  --on-dark-muted: #b9c3e3;
+  --primary-soft: #ebe4ff;
+  --accent-soft: #ffe1d8;
+  --sun-soft: #fff3bf;
+  --mint-soft: #d9f8ec;
+  --navy-2: #2a2a2a;
+  --on-dark-muted: #d4d4d4;
 }
 
 .dark {
-  --primary: #e3e8f7;
-  --primary-foreground: #0e1a3a;
-  --accent: #ff7a5f;
-  --accent-foreground: #0e1a3a;
-  --accent-strong: #ff8b73;
-  --background: #0b1430;
-  --foreground: #eef1fa;
-  --muted: #b9c3e3;
-  --muted-bg: #131f45;
-  --card: #111c40;
-  --border: #26355f;
-  --input: #5c6a94;
-  --ring: #ffc53d;
-  --destructive: #f97066;
-  --primary-soft: #18264f;
-  --accent-soft: #3a1f1c;
-  --sun-soft: #3a3016;
+  --primary: #ffffff;
+  --primary-foreground: #111111;
+  --background: #111111;
+  --foreground: #ffffff;
+  --card: #1c1c1c;
+  --muted: #d4d4d4;
+  --muted-bg: #222222;
+  --border: #ffffff;
+  --input: #ffffff;
+  --ring: #ffde59;
 }
 
-/* Inside navy bands: lighter focus ring + muted text. */
+/* Inside ink bands: yellow focus ring + white text. */
 .on-dark {
-  --ring: #ffc53d;
+  --ring: #ffde59;
   color: #ffffff;
 }
 
@@ -65,6 +61,10 @@
   --color-accent-strong: var(--accent-strong);
   --color-sun: var(--sun);
   --color-sun-soft: var(--sun-soft);
+  --color-mint: var(--mint);
+  --color-mint-soft: var(--mint-soft);
+  --color-lavender: var(--lavender);
+  --color-ink: #111111;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
@@ -78,17 +78,18 @@
   --color-accent-soft: var(--accent-soft);
   --color-navy-2: var(--navy-2);
   --color-on-dark-muted: var(--on-dark-muted);
-  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
-  /* "serif" slot = display face. Headings use it everywhere. */
-  --font-serif: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-rubik), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-rubik), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-rubik), ui-sans-serif, system-ui, sans-serif;
 }
 
-/* Squarer, geometric corners across the whole UI. */
+/* Chunky, friendly corners. */
 @theme {
-  --radius-xl: 0.625rem;
-  --radius-2xl: 0.75rem;
-  --radius-3xl: 0.875rem;
+  --radius-md: 0.625rem; /* 10px — buttons, inputs */
+  --radius-lg: 0.875rem; /* 14px — cards */
+  --radius-xl: 1rem; /* 16px — panels */
+  --radius-2xl: 1.125rem;
+  --radius-3xl: 1.5rem;
 }
 
 @layer base {
@@ -107,20 +108,21 @@
   h2,
   h3 {
     font-family: var(--font-display);
-    letter-spacing: -0.025em;
+    font-weight: 800;
+    letter-spacing: -0.02em;
   }
   :focus-visible {
     outline: 3px solid var(--ring);
-    outline-offset: 2px;
+    outline-offset: 3px;
   }
   ::selection {
     background: var(--sun);
-    color: #0e1a3a;
+    color: #111111;
   }
 }
 
 .prose-legal h2 {
-  @apply mt-8 mb-3 text-xl font-bold;
+  @apply mt-8 mb-3 text-xl font-extrabold;
 }
 .prose-legal p,
 .prose-legal li {
@@ -130,105 +132,136 @@
   @apply list-disc pl-6;
 }
 
-/* ---- Brand flourishes ---------------------------------------------------- */
+/* ---- Neo-brutalist kit --------------------------------------------------- */
 
-/* Solid coral CTA fill (kept as a class name for older markup). */
+/* Legacy name: solid coral fill. */
 .bg-brand {
   background-color: var(--accent);
 }
 
-/* Navy band with a faint line grid. */
-.bg-navy-grid {
-  background-color: var(--primary);
-  background-image:
-    linear-gradient(to right, rgb(255 255 255 / 0.06) 1px, transparent 1px),
-    linear-gradient(to bottom, rgb(255 255 255 / 0.06) 1px, transparent 1px);
-  background-size: 48px 48px;
-  background-position: -1px -1px;
-}
-
-/* Light section with a dot grid. */
-.bg-dots {
-  background-color: var(--background);
-  background-image: radial-gradient(rgb(14 26 58 / 0.14) 1.2px, transparent 1.2px);
-  background-size: 22px 22px;
-}
-
-/* Hard offset shadow — the brand's "sticker" depth. */
+/* Hard offset shadows. */
 .shadow-hard {
-  box-shadow: 6px 6px 0 0 var(--primary);
+  box-shadow: 6px 6px 0 0 #111111;
 }
 .shadow-hard-sm {
-  box-shadow: 4px 4px 0 0 var(--primary);
+  box-shadow: 4px 4px 0 0 #111111;
 }
-.shadow-hard-sun {
-  box-shadow: 6px 6px 0 0 var(--sun);
+.shadow-hard-xs {
+  box-shadow: 3px 3px 0 0 #111111;
 }
-
-/* Huge outline numerals. */
-.text-outline {
-  color: transparent;
-  -webkit-text-stroke: 2px var(--primary);
-}
-.text-outline-light {
-  color: transparent;
-  -webkit-text-stroke: 2px var(--sun);
+.shadow-hard-lg {
+  box-shadow: 10px 10px 0 0 #111111;
 }
 
-/* Emphasis inside headlines: a yellow marker band on light backgrounds,
-   solid yellow text on navy. */
-.em-mark {
+/* A thick-bordered white "sticker" surface. */
+.sticker {
+  background: #ffffff;
+  border: 3px solid #111111;
+  border-radius: 14px;
+  box-shadow: 5px 5px 0 0 #111111;
+}
+
+/* Black pill tag, e.g. "STEP 1". */
+.tag {
+  display: inline-block;
+  background: #111111;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.125rem 0.5rem;
+  border-radius: 6px;
+}
+
+/* The headline "sticker word": white box, black border, hard shadow, tilted. */
+.em-sticker {
   font-style: normal;
-  background-image: linear-gradient(
-    transparent 64%,
-    var(--sun) 64%,
-    var(--sun) 92%,
-    transparent 92%
-  );
-  -webkit-box-decoration-break: clone;
-  box-decoration-break: clone;
-  padding: 0 0.08em;
-}
-.on-dark .em-mark {
-  background-image: none;
-  color: var(--sun);
-  padding: 0;
+  display: inline-block;
+  background: #ffffff;
+  border: 3px solid #111111;
+  box-shadow: 4px 4px 0 0 #111111;
+  padding: 0 0.18em;
+  margin: 0.06em 0.04em;
+  transform: rotate(-1.5deg);
+  line-height: 1.08;
 }
 
-@keyframes orbit {
-  to {
-    transform: rotate(360deg);
+/* Small dotted texture for the page background. */
+.bg-grain {
+  background-color: var(--background);
+  background-image: radial-gradient(rgb(17 17 17 / 0.12) 1.2px, transparent 1.2px);
+  background-size: 20px 20px;
+}
+
+/* Ticker / marquee. Static and wrapping unless motion is allowed. */
+.marquee-track {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem 0;
+}
+.marquee-track [data-dup] {
+  display: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .marquee-track {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    width: max-content;
+    animation: marquee 38s linear infinite;
+  }
+  .marquee-track [data-dup] {
+    display: flex;
+  }
+  .marquee:hover .marquee-track,
+  .marquee:focus-within .marquee-track {
+    animation-play-state: paused;
   }
 }
-@keyframes pulse-dot {
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Segmented progress bar blocks. */
+.seg {
+  height: 0.875rem;
+  flex: 1 1 0;
+  border: 2px solid #111111;
+  border-radius: 4px;
+  background: #ffffff;
+}
+.seg[data-on="true"] {
+  background: var(--accent);
+}
+
+@keyframes wobble {
   0%,
   100% {
-    opacity: 1;
+    transform: rotate(-4deg);
   }
   50% {
-    opacity: 0.35;
+    transform: rotate(4deg);
   }
 }
-.animate-orbit {
-  transform-box: view-box;
+.animate-wobble {
+  transform-box: fill-box;
   transform-origin: center;
-  animation: orbit 80s linear infinite;
-}
-.animate-orbit-rev {
-  transform-box: view-box;
-  transform-origin: center;
-  animation: orbit 120s linear infinite reverse;
-}
-.animate-blink {
-  animation: pulse-dot 3.2s ease-in-out infinite;
+  animation: wobble 6s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  .animate-orbit,
-  .animate-orbit-rev,
-  .animate-blink {
+  .animate-wobble {
     animation: none;
   }
   html {
     scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
   }
 }

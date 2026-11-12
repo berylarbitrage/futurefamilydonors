@@ -16,23 +16,16 @@ export function Hero({
   footnote?: React.ReactNode;
 }) {
   return (
-    <section className="bg-navy-grid on-dark relative overflow-hidden">
-      {/* coral corner block */}
-      <span aria-hidden className="bg-accent absolute top-0 right-0 hidden h-3 w-1/3 md:block" />
-      <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 pt-12 pb-14 md:grid-cols-[1.15fr_1fr] md:pt-20 md:pb-24">
+    <section className="bg-grain relative overflow-hidden">
+      <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 pt-10 pb-14 md:grid-cols-[1.15fr_0.85fr] md:pt-16 md:pb-20">
         <div className="min-w-0">
-          {eyebrow && (
-            <p className="text-sun mb-6 inline-flex items-center gap-3 text-xs font-bold tracking-[0.24em] uppercase">
-              <span className="bg-sun size-2.5" aria-hidden />
-              {eyebrow}
-            </p>
-          )}
-          <h1 className="text-[2.5rem] leading-[1.02] font-bold tracking-tight break-words text-white sm:text-6xl lg:text-[4.75rem]">
+          {eyebrow && <p className="tag mb-6">{eyebrow}</p>}
+          <h1 className="text-[2.6rem] leading-[1.04] font-extrabold tracking-tight break-words sm:text-6xl lg:text-[4.4rem]">
             {title}
           </h1>
-          <p className="text-on-dark-muted mt-6 max-w-xl text-lg md:text-xl">{subtitle}</p>
-          <div className="mt-9 flex flex-col gap-3 sm:flex-row">{children}</div>
-          {footnote && <div className="mt-9">{footnote}</div>}
+          <p className="mt-6 max-w-xl text-lg font-medium md:text-xl">{subtitle}</p>
+          <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:flex-wrap">{children}</div>
+          {footnote && <div className="mt-8">{footnote}</div>}
         </div>
         <HeroArt variant={art} />
       </div>
@@ -40,7 +33,7 @@ export function Hero({
   );
 }
 
-/** Emphasis for a word or phrase inside a headline (yellow marker / yellow on navy). */
+/** The headline "sticker word": a white, tilted, bordered box. */
 export function Em({ children }: { children: React.ReactNode }) {
-  return <em className="em-mark">{children}</em>;
+  return <em className="em-sticker">{children}</em>;
 }

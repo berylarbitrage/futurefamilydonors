@@ -3,42 +3,34 @@ import { DISCLAIMER, SITE } from "@/config/site";
 import { Logo } from "@/components/layout/logo";
 import { CookieSettingsLink } from "@/components/analytics/cookie-settings-link";
 
-const linkCls = "hover:text-sun underline-offset-4 hover:underline";
+const linkCls =
+  "inline-block py-0.5 font-semibold underline-offset-4 decoration-2 hover:underline hover:bg-sun";
 
 export function Footer() {
   return (
-    <footer className="bg-navy-grid on-dark mt-20 text-white">
-      <div className="bg-accent h-2" aria-hidden />
-      <div className="mx-auto max-w-6xl px-4 pt-14">
-        <p className="font-display max-w-3xl text-3xl leading-[1.05] font-bold tracking-tight md:text-5xl">
-          Help build the families <span className="text-sun">of tomorrow.</span>
-        </p>
-      </div>
-      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 md:grid-cols-4">
-        <div className="space-y-3 md:col-span-2">
-          <Logo inverse />
-          <p className="text-on-dark-muted max-w-sm text-sm">{SITE.tagline}</p>
+    <footer className="border-ink mt-16 border-t-[6px] bg-white">
+      <div className="mx-auto grid max-w-6xl gap-10 px-4 pt-12 pb-10 md:grid-cols-[1.4fr_1fr_1fr]">
+        <div className="space-y-4">
+          <Logo />
+          <p className="max-w-sm text-sm font-medium">{SITE.tagline}</p>
           <p className="flex flex-col items-start text-sm">
-            <a
-              className={`inline-block py-2 underline ${linkCls}`}
-              href={`mailto:${SITE.contactEmail}`}
-            >
+            <a className={`${linkCls} py-2 underline`} href={`mailto:${SITE.contactEmail}`}>
               {SITE.contactEmail}
             </a>
             <a
-              className={`inline-block py-2 underline ${linkCls}`}
+              className={`${linkCls} py-2 underline`}
               href={`tel:${SITE.contactPhone.replace(/\D/g, "")}`}
             >
               {SITE.contactPhone}
             </a>
           </p>
-          <p className="text-on-dark-muted text-sm">{SITE.serviceArea}</p>
+          <p className="bg-mint border-ink inline-block rounded-lg border-2 px-2.5 py-1 text-sm font-bold">
+            {SITE.serviceArea}
+          </p>
         </div>
         <div>
-          <h2 className="text-sun mb-4 font-sans text-xs font-bold tracking-[0.24em] uppercase">
-            Donate
-          </h2>
-          <ul className="space-y-2.5 text-sm">
+          <h2 className="tag mb-4">Donate</h2>
+          <ul className="space-y-2 text-sm">
             <li>
               <Link className={linkCls} href="/egg-donor">
                 Become an Egg Donor
@@ -63,10 +55,8 @@ export function Footer() {
           </ul>
         </div>
         <div>
-          <h2 className="text-sun mb-4 font-sans text-xs font-bold tracking-[0.24em] uppercase">
-            Company
-          </h2>
-          <ul className="space-y-2.5 text-sm">
+          <h2 className="tag mb-4">Company</h2>
+          <ul className="space-y-2 text-sm">
             <li>
               <Link className={linkCls} href="/about">
                 About Us
@@ -98,10 +88,10 @@ export function Footer() {
           </ul>
         </div>
       </div>
-      <div className="border-t border-white/15">
-        <div className="text-on-dark-muted mx-auto max-w-6xl space-y-2 px-4 py-6 text-xs">
+      <div className="border-ink border-t-3">
+        <div className="mx-auto max-w-6xl space-y-2 px-4 py-6 text-xs">
           <p>
-            <strong className="text-white">Disclaimer:</strong> {DISCLAIMER}
+            <strong>Disclaimer:</strong> {DISCLAIMER}
           </p>
           <p>
             © {new Date().getFullYear()} {SITE.brand}. All rights reserved.

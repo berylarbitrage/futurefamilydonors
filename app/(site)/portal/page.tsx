@@ -45,7 +45,7 @@ export default async function PortalPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-3xl font-semibold">
+        <h1 className="text-3xl font-extrabold md:text-4xl">
           {app ? `Welcome, ${app.first_name}` : "Applicant Portal"}
         </h1>
         <form action="/api/auth/signout" method="post">
@@ -56,17 +56,17 @@ export default async function PortalPage() {
       </div>
       {app ? (
         <Card className="max-w-2xl">
-          <p className="text-muted text-sm capitalize">{app.donor_type} donor application</p>
-          <p className="mt-1 text-lg">
+          <p className="tag">{app.donor_type} donor application</p>
+          <p className="mt-3 text-lg">
             Status: <strong>{STATUS_LABELS[app.status as Status] ?? app.status}</strong>
           </p>
           <div className="mt-4">
-            <div className="mb-1 flex justify-between text-sm">
+            <div className="mb-2 flex justify-between text-sm font-bold">
               <span>Full application</span>
               <span>{pct}% complete</span>
             </div>
-            <div className="bg-muted-bg h-2 rounded-full">
-              <div className="bg-primary h-full rounded-full" style={{ width: `${pct}%` }} />
+            <div className="border-ink h-5 overflow-hidden rounded-md border-3 bg-white">
+              <div className="bg-accent h-full" style={{ width: `${pct}%` }} />
             </div>
           </div>
           <Button asChild size="lg" className="mt-6">
@@ -82,11 +82,11 @@ export default async function PortalPage() {
       ) : null}
       {app && (
         <Card className="max-w-2xl" id="messages">
-          <h2 className="mb-4 font-sans text-lg font-semibold">Messages</h2>
+          <h2 className="mb-4 text-xl font-extrabold">Messages</h2>
           <MessageThread viewer="applicant" messages={messages ?? []} />
-          <div className="border-border mt-6 border-t pt-6">
+          <div className="border-ink mt-6 border-t-3 pt-6">
             <MessageReply />
-            <p className="text-muted mt-3 text-xs">
+            <p className="mt-3 text-xs font-medium">
               Messages here are private between you and your coordinator.
             </p>
           </div>

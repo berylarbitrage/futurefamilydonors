@@ -52,8 +52,8 @@ export function FullApplication({
     <div className="grid gap-8 md:grid-cols-[16rem_1fr]">
       <aside>
         <div className="mb-4">
-          <div className="mb-1 flex justify-between text-sm">
-            <span className="font-medium">Progress</span>
+          <div className="mb-2 flex justify-between text-sm font-bold">
+            <span className="tag">Progress</span>
             <span>{pct}%</span>
           </div>
           <div
@@ -62,12 +62,11 @@ export function FullApplication({
             aria-valuemin={0}
             aria-valuemax={100}
             aria-label="Application completion"
-            className="bg-muted-bg h-2 rounded-full"
+            className="flex gap-1"
           >
-            <div
-              className="bg-primary h-full rounded-full transition-all"
-              style={{ width: `${pct}%` }}
-            />
+            {ALL_SECTION_IDS.map((s) => (
+              <span key={s} className="seg" data-on={completed.includes(s)} aria-hidden />
+            ))}
           </div>
         </div>
         <nav aria-label="Application sections">
@@ -81,19 +80,16 @@ export function FullApplication({
                     onClick={() => go(s)}
                     aria-current={active === s ? "step" : undefined}
                     className={cn(
-                      "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm",
+                      "flex w-full items-center gap-2 rounded-[10px] border-3 px-3 py-2 text-left text-sm font-semibold",
                       active === s
-                        ? "bg-primary-soft text-primary font-semibold"
-                        : "hover:bg-muted-bg",
+                        ? "border-ink bg-sun font-extrabold shadow-[3px_3px_0_0_#111]"
+                        : "hover:border-ink border-transparent hover:bg-white",
                     )}
                   >
                     {done ? (
-                      <CheckCircle2
-                        className="text-primary size-4 shrink-0"
-                        aria-label="Complete"
-                      />
+                      <CheckCircle2 className="size-4 shrink-0" aria-label="Complete" />
                     ) : (
-                      <Circle className="text-muted size-4 shrink-0" aria-label="Incomplete" />
+                      <Circle className="size-4 shrink-0" aria-label="Incomplete" />
                     )}
                     <span className="whitespace-nowrap">
                       {i + 1}. {SECTION_TITLES[s]}
@@ -107,13 +103,13 @@ export function FullApplication({
       </aside>
 
       <section
-        className="bg-card rounded-2xl p-5 shadow-sm sm:p-8"
+        className="border-ink min-w-0 rounded-[16px] border-3 bg-white p-5 shadow-[6px_6px_0_0_#111] sm:p-8"
         aria-labelledby="section-heading"
       >
-        <h2 id="section-heading" tabIndex={-1} className="text-2xl font-semibold outline-none">
+        <h2 id="section-heading" tabIndex={-1} className="text-2xl font-extrabold outline-none">
           {SECTION_TITLES[active]}
         </h2>
-        {def && <p className="text-muted mt-1 mb-6 text-sm">{def.description}</p>}
+        {def && <p className="mt-1 mb-6 text-sm font-medium">{def.description}</p>}
         {!def && <div className="mb-6" />}
 
         {def && (

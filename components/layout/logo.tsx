@@ -3,37 +3,20 @@ import { SITE } from "@/config/site";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { cn } from "@/lib/utils";
 
-export function Logo({
-  showSubtitle = true,
-  inverse = false,
-}: {
-  showSubtitle?: boolean;
-  inverse?: boolean;
-}) {
+/** Yellow "sticker" wordmark with a thick ink border and hard shadow. */
+export function Logo({ className }: { className?: string }) {
   return (
     <Link
       href="/"
       className={cn(
-        "group flex items-center gap-2.5",
-        inverse ? "text-primary-foreground" : "text-primary",
+        "group bg-sun text-ink border-ink inline-flex items-center gap-1.5 rounded-[6px] border-3 py-0.5 pr-2.5 pl-1.5 shadow-[3px_3px_0_0_#111] transition-transform motion-safe:hover:-rotate-2",
+        className,
       )}
       aria-label={`${SITE.brand} home`}
     >
-      <LogoMark className="size-10 shrink-0 transition-transform motion-safe:group-hover:-translate-y-0.5" />
-      <span className="flex flex-col leading-none">
-        <span className="font-display text-lg font-bold tracking-tight whitespace-nowrap sm:text-xl">
-          {SITE.brand}
-        </span>
-        {showSubtitle && (
-          <span
-            className={cn(
-              "mt-1 hidden text-[0.62rem] font-bold tracking-[0.2em] uppercase sm:block",
-              inverse ? "text-sun" : "text-accent-strong",
-            )}
-          >
-            {SITE.subtitle}
-          </span>
-        )}
+      <LogoMark className="size-7 shrink-0" />
+      <span className="font-display text-[1.05rem] leading-tight font-extrabold tracking-tight whitespace-nowrap sm:text-[1.2rem]">
+        {SITE.brand}
       </span>
     </Link>
   );

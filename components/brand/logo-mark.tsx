@@ -1,7 +1,7 @@
 /**
- * Future Family Donors mark: a coral sun rising on a horizon, wrapped by an
- * orbit arc carrying three "family" dots — two parents and a new arrival in
- * yellow. Line parts use `currentColor` so the mark works on light and navy.
+ * Future Family Donors mark: three chunky overlapping circles — two "parents"
+ * (yellow, coral) and a small mint "new arrival" — outlined in thick ink, the
+ * same shapes as the hero art.
  */
 export function LogoMark({ className, title }: { className?: string; title?: string }) {
   return (
@@ -13,21 +13,9 @@ export function LogoMark({ className, title }: { className?: string; title?: str
       fill="none"
     >
       {title && <title>{title}</title>}
-      {/* rising sun */}
-      <path d="M11 37a13 13 0 0 1 26 0Z" fill="#FF5A3C" />
-      {/* orbit arc */}
-      <path
-        d="M3 37a21 21 0 0 1 42 0"
-        stroke="currentColor"
-        strokeWidth="3"
-        strokeLinecap="square"
-      />
-      {/* horizon */}
-      <path d="M3 43h42" stroke="currentColor" strokeWidth="3" strokeLinecap="square" />
-      {/* family on the orbit */}
-      <circle cx="9.2" cy="22.2" r="3.6" fill="currentColor" />
-      <circle cx="38.8" cy="22.2" r="3.6" fill="currentColor" />
-      <circle cx="24" cy="16" r="4.6" fill="#FFC53D" stroke="currentColor" strokeWidth="2" />
+      <circle cx="17" cy="19" r="12" fill="#FFDE59" stroke="#111" strokeWidth="3" />
+      <circle cx="31" cy="19" r="12" fill="#FF7A59" stroke="#111" strokeWidth="3" />
+      <circle cx="24" cy="35" r="8" fill="#7EE8C4" stroke="#111" strokeWidth="3" />
     </svg>
   );
 }

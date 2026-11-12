@@ -9,13 +9,13 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <Section title="Terms of Use">
-      <div className="prose-legal max-w-3xl">
-        <p className="bg-accent-soft rounded-lg p-3 text-sm font-semibold">
+    <Section eyebrow="Legal" title="Terms of Use">
+      <div className="prose-legal border-ink max-w-3xl rounded-[16px] border-3 bg-white p-6 shadow-[6px_6px_0_0_#111] md:p-10">
+        <p className="bg-sun border-ink rounded-[10px] border-3 p-3 text-sm font-bold">
           DRAFT — PLACEHOLDER TEXT. These terms must be reviewed by a qualified attorney before
           launch.
         </p>
-        <p className="text-muted text-sm">Last updated: [DATE]</p>
+        <p className="text-sm font-medium">Last updated: [DATE]</p>
         <h2>1. Acceptance</h2>
         <p>By using {SITE.domain}, you agree to these Terms and our Privacy Policy.</p>
         <h2>2. No medical advice</h2>
