@@ -1,3 +1,5 @@
+import { LogoMarkShapes } from "@/components/brand/logo-mark";
+
 const INK = "#111111";
 const SUN = "#FFDE59";
 const CORAL = "#FF7A59";
@@ -58,11 +60,10 @@ export function HeroArt({ variant }: { variant: "home" | "egg" | "sperm" }) {
               {...S}
               transform="rotate(12 343 293)"
             />
-            <circle cx="160" cy="180" r="92" fill={SUN} {...S} />
-            <circle cx="268" cy="180" r="92" fill={CORAL} {...S} />
-            {/* overlap lens re-drawn so the outlines read clearly */}
-            <path d="M214 105.5A92 92 0 0 1 214 254.5A92 92 0 0 1 214 105.5Z" fill={WHITE} {...S} />
-            <circle cx="214" cy="292" r="54" fill={MINT} {...S} />
+            {/* the brand mark, blown up: two sperm whose tails make a heart round the egg */}
+            <g transform="translate(52 14) scale(3)">
+              <LogoMarkShapes strokeScale={0.55} />
+            </g>
             <g className="animate-wobble">
               <Star x={362} y={70} r={32} />
             </g>

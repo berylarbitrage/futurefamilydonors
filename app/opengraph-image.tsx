@@ -11,16 +11,19 @@ const SUN = "#FFDE59";
 const CORAL = "#FF7A59";
 const MINT = "#7EE8C4";
 
-const circle = (left: number, top: number, d: number, bg: string) => ({
-  position: "absolute" as const,
-  left,
-  top,
-  width: d,
-  height: d,
-  borderRadius: d,
-  background: bg,
-  border: `8px solid ${INK}`,
-});
+/** The F11 mark as a data-URI SVG (keeps satori to an <img>, no SVG-in-JSX quirks). */
+const markSvg = (k: number) =>
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="6 14 96 86"><circle cx="52" cy="58" r="14" fill="${SUN}" stroke="${INK}" stroke-width="${3.5 * k}"/><path d="M52 92 C 18 70, 16 34, 36 28 C 46 25, 52 32, 52 40" fill="none" stroke="${INK}" stroke-width="${4 * k}" stroke-linecap="round"/><path d="M52 92 C 86 70, 88 34, 68 28 C 58 25, 52 32, 52 40" fill="none" stroke="${INK}" stroke-width="${4 * k}" stroke-linecap="round"/><ellipse cx="36" cy="28" rx="8" ry="6" fill="${CORAL}" stroke="${INK}" stroke-width="${3 * k}" transform="rotate(-20 36 28)"/><ellipse cx="68" cy="28" rx="8" ry="6" fill="${MINT}" stroke="${INK}" stroke-width="${3 * k}" transform="rotate(20 68 28)"/></svg>`;
+const markSrc = (k: number) =>
+  `data:image/svg+xml;base64,${Buffer.from(markSvg(k)).toString("base64")}`;
+/** Large art-panel mark gets heavier outlines so it reads as chunky as the rest of the brand. */
+const MARK_SRC_LG = markSrc(1.7);
+const MARK_SRC_SM = markSrc(1.25);
+const MARK_RATIO = 86 / 96;
+
+const BRAND_WORDS = SITE.brand.split(" ");
+const BRAND_LINE_2 = BRAND_WORDS.length > 1 ? BRAND_WORDS[BRAND_WORDS.length - 1] : "";
+const BRAND_LINE_1 = BRAND_WORDS.slice(0, BRAND_WORDS.length > 1 ? -1 : undefined).join(" ");
 
 export default function OgImage() {
   return new ImageResponse(
@@ -61,9 +64,13 @@ export default function OgImage() {
           display: "flex",
         }}
       >
-        <div style={circle(40, 70, 190, SUN)} />
-        <div style={circle(150, 70, 190, CORAL)} />
-        <div style={circle(130, 230, 120, MINT)} />
+        {/* eslint-disable-next-line jsx-a11y/alt-text */}
+        <img
+          src={MARK_SRC_LG}
+          width={310}
+          height={Math.round(310 * MARK_RATIO)}
+          style={{ margin: "auto" }}
+        />
       </div>
       <div
         style={{
@@ -73,20 +80,22 @@ export default function OgImage() {
           maxWidth: 620,
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignSelf: "flex-start",
-            background: SUN,
-            border: `6px solid ${INK}`,
-            boxShadow: `6px 6px 0 ${INK}`,
-            padding: "6px 18px",
-            fontSize: 34,
-            fontWeight: 800,
-            color: INK,
-          }}
-        >
-          {SITE.brand}
+        <div style={{ display: "flex", alignItems: "center", color: INK }}>
+          {/* eslint-disable-next-line jsx-a11y/alt-text */}
+          <img src={MARK_SRC_SM} width={96} height={Math.round(96 * MARK_RATIO)} />
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              marginLeft: 16,
+              fontSize: 38,
+              lineHeight: 1.05,
+              letterSpacing: -1,
+            }}
+          >
+            <span style={{ fontWeight: 900 }}>{BRAND_LINE_1}</span>
+            <span style={{ fontWeight: 800 }}>{BRAND_LINE_2}</span>
+          </div>
         </div>
         <div
           style={{

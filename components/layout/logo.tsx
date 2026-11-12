@@ -3,20 +3,22 @@ import { SITE } from "@/config/site";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { cn } from "@/lib/utils";
 
-/** Yellow "sticker" wordmark with a thick ink border and hard shadow. */
+/** Lockup: heart mark on the left, two-line ink wordmark ("Future Family / Donors"). */
 export function Logo({ className }: { className?: string }) {
+  const words = SITE.brand.split(" ");
+  const line2 = words.length > 1 ? words.pop() : "";
+  const line1 = words.join(" ");
+
   return (
     <Link
       href="/"
-      className={cn(
-        "group bg-sun text-ink border-ink inline-flex items-center gap-1.5 rounded-[6px] border-3 py-0.5 pr-2.5 pl-1.5 shadow-[3px_3px_0_0_#111] transition-transform motion-safe:hover:-rotate-2",
-        className,
-      )}
+      className={cn("group text-ink inline-flex items-center gap-2", className)}
       aria-label={`${SITE.brand} home`}
     >
-      <LogoMark className="size-7 shrink-0" />
-      <span className="font-display text-[1.05rem] leading-tight font-extrabold tracking-tight whitespace-nowrap sm:text-[1.2rem]">
-        {SITE.brand}
+      <LogoMark className="h-11 w-auto shrink-0 transition-transform motion-safe:group-hover:-rotate-6" />
+      <span className="font-display flex flex-col text-[1.05rem] leading-[1.05] tracking-tight whitespace-nowrap sm:text-[1.15rem]">
+        <span className="font-black">{line1}</span>
+        {line2 && <span className="font-extrabold">{line2}</span>}
       </span>
     </Link>
   );

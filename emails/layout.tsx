@@ -16,16 +16,12 @@ export function EmailLayout({ preview, children }: { preview: string; children: 
         <Container style={{ maxWidth: 560, margin: "0 auto", padding: "32px 24px" }}>
           <Text
             style={{
-              fontSize: 20,
-              fontWeight: 800,
+              fontSize: 22,
+              fontWeight: 900,
+              lineHeight: 1.1,
               color: "#111111",
               fontFamily: "'Rubik', Arial, sans-serif",
               letterSpacing: "-0.02em",
-              backgroundColor: "#FFDE59",
-              border: "3px solid #111111",
-              boxShadow: "3px 3px 0 #111111",
-              padding: "2px 10px",
-              display: "inline-block",
             }}
           >
             {SITE.brand}
