@@ -213,6 +213,11 @@ export default async function ApplicationDetailPage({
                 ["Education", app.education],
                 ["Schools", schoolsOf(app.prescreen_details)],
                 [
+                  "Work / occupation",
+                  (app.prescreen_details as { occupation?: string } | null)?.occupation,
+                ],
+                ["About them", (app.prescreen_details as { aboutMe?: string } | null)?.aboutMe],
+                [
                   "Height",
                   app.height_in ? `${Math.floor(app.height_in / 12)}'${app.height_in % 12}"` : null,
                 ],
@@ -262,7 +267,14 @@ export default async function ApplicationDetailPage({
               <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {photos.map((p) => (
                   <li key={p.id}>
-                    {signed.get(p.storage_path) ? (
+                    {p.kind === "video" && signed.get(p.storage_path) ? (
+                      <video
+                        src={signed.get(p.storage_path)}
+                        controls
+                        preload="metadata"
+                        className="aspect-square w-full rounded-lg bg-black object-contain"
+                      />
+                    ) : signed.get(p.storage_path) ? (
                       <a href={signed.get(p.storage_path)} target="_blank" rel="noreferrer">
                         <Image
                           src={signed.get(p.storage_path)!}

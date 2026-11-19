@@ -57,6 +57,28 @@ describe("POST /api/apply/photos", () => {
     expect(db.objects.has(file(5))).toBe(false);
   });
 
+  it("records one optional video as kind 'video' without counting it as a photo", async () => {
+    const vid = `${APP}/99999999-0000-4000-8000-000000000000.mp4`;
+    const vid2 = `${APP}/88888888-0000-4000-8000-000000000000.webm`;
+    db.objects.set(vid, { size: 30 * 1024 * 1024, mimetype: "video/mp4" });
+    db.objects.set(vid2, { size: 1000, mimetype: "video/webm" });
+    const res = await POST(
+      req({ applicationId: APP, paths: [file(1), file(2), file(3), vid, vid2] }),
+    );
+    expect(await res.json()).toEqual({ ok: true, saved: 4 });
+    expect(photos().filter((p) => p.kind === "video")).toHaveLength(1);
+    expect(db.objects.has(vid2)).toBe(false); // second video removed
+    expect(db.tables.full_applications![0]!.completed_sections).toContain("photos");
+  });
+
+  it("rejects a video over 50 MB", async () => {
+    const vid = `${APP}/99999999-0000-4000-8000-000000000000.mp4`;
+    db.objects.set(vid, { size: 60 * 1024 * 1024, mimetype: "video/mp4" });
+    const res = await POST(req({ applicationId: APP, paths: [vid] }));
+    expect(await res.json()).toEqual({ ok: true, saved: 0 });
+    expect(db.objects.has(vid)).toBe(false);
+  });
+
   it("does not save the same photo twice", async () => {
     await POST(req({ applicationId: APP, paths: [file(1)] }));
     await POST(req({ applicationId: APP, paths: [file(1)] }));

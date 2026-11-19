@@ -7,7 +7,7 @@ import { EDUCATION_LEVELS, SCHOOL_LEVELS, type DonorType } from "@/config/eligib
 import { US_STATE_CODES } from "@/config/us-states";
 import { COUNTRIES, DEFAULT_COUNTRY, isUnitedStates } from "@/config/countries";
 import { ageOn, parseIsoDate } from "@/lib/dates";
-import { PHOTO_LIMITS } from "@/lib/full-app";
+import { PHOTO_LIMITS, VIDEO_LIMITS } from "@/lib/full-app";
 
 /** How many extra schools an applicant can add besides the first one. */
 export const MAX_OTHER_SCHOOLS = 4;
@@ -71,6 +71,9 @@ export const step1Schema = z.object({
   postalCode: optText(20),
   education: z.enum(EDUCATION_LEVELS, { error: "Please select your education level" }),
   school: z.string().trim().min(1, "Please enter your school name").max(120),
+  /** Optional: what you do (job, studies) and anything else about yourself. */
+  occupation: optText(120),
+  aboutMe: optText(1500),
   schoolLevel: z.enum(SCHOOL_LEVELS, { error: "Please choose your level of study at this school" }),
   /** Additional schools (optional; rows without a name are ignored). */
   otherSchools: z
@@ -240,4 +243,15 @@ export const applyRequestSchema = z.object({
     )
     .min(PHOTO_LIMITS.minCount, `Please add at least ${PHOTO_LIMITS.minCount} photos`)
     .max(PHOTO_LIMITS.maxCount, `Please add no more than ${PHOTO_LIMITS.maxCount} photos`),
+  /** Optional short video introducing yourself. */
+  video: z
+    .object({
+      contentType: z.enum(VIDEO_LIMITS.mimeTypes),
+      size: z
+        .number()
+        .int()
+        .positive()
+        .max(VIDEO_LIMITS.maxBytes, "Videos must be 50 MB or smaller"),
+    })
+    .optional(),
 });

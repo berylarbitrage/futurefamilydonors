@@ -86,6 +86,10 @@ class Query implements PromiseLike<{ data: unknown; error: null; count?: number 
     this.isSingle = true;
     return this;
   }
+  neq(col: string, v: unknown) {
+    this.filters.push((r) => r[col] !== v);
+    return this;
+  }
   is(col: string, v: unknown) {
     this.filters.push((r) => (r[col] ?? null) === v);
     return this;

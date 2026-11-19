@@ -32,6 +32,7 @@ import { readRefCookie } from "@/lib/referral";
 import { trackLead } from "@/lib/analytics";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { NativeSelect } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { YesNo } from "@/components/forms/yes-no";
@@ -62,6 +63,8 @@ function stepFields(type: DonorType): FieldName[][] {
       "school",
       "schoolLevel",
       "otherSchools",
+      "occupation",
+      "aboutMe",
       "howHeard",
     ],
     [
@@ -101,6 +104,7 @@ export function PrescreenForm({
   // Photos stay in memory (not in the saved draft) until submit.
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoError, setPhotoError] = useState<string | null>(null);
+  const [video, setVideo] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const restored = useRef(false);
   const stopPersisting = useRef(false);
@@ -294,6 +298,7 @@ export function PrescreenForm({
           turnstileToken: token,
           website: honeypot,
           photos: photos.map((f) => ({ contentType: f.type, size: f.size })),
+          ...(video ? { video: { contentType: video.type, size: video.size } } : {}),
         }),
       });
     } catch {
@@ -308,6 +313,7 @@ export function PrescreenForm({
       continueUrl?: string;
       applicationId?: string;
       uploads?: { path: string; token: string }[];
+      videoUpload?: { path: string; token: string };
       error?: string;
       code?: string;
       ref?: string;
@@ -343,9 +349,12 @@ export function PrescreenForm({
       setUploading(true);
       const done: string[] = [];
       const bucket = createClient().storage.from("donor-photos");
+      const jobs: { path: string; token: string; file: File | undefined }[] = [
+        ...body.uploads.map((u, i) => ({ ...u, file: photos[i] })),
+        ...(body.videoUpload && video ? [{ ...body.videoUpload, file: video }] : []),
+      ];
       await Promise.all(
-        body.uploads.map(async (u, i) => {
-          const file = photos[i];
+        jobs.map(async ({ file, ...u }) => {
           if (!file) return;
           const { error } = await bucket.uploadToSignedUrl(u.path, u.token, file, {
             contentType: file.type,
@@ -622,6 +631,33 @@ export function PrescreenForm({
                 <Plus aria-hidden /> Add another school
               </Button>
             )}
+            <Field
+              id="occupation"
+              label="What do you do? (optional)"
+              hint="Your job, studies or what you're working toward — e.g. 'Nursing student' or 'Software engineer'."
+              error={err("occupation")}
+            >
+              <Input
+                id="occupation"
+                maxLength={120}
+                {...inv("occupation")}
+                {...register("occupation")}
+              />
+            </Field>
+            <Field
+              id="aboutMe"
+              label="Tell us about yourself (optional)"
+              hint="Your work, interests, talents, what matters to you — anything you'd like families to know."
+              error={err("aboutMe")}
+            >
+              <Textarea
+                id="aboutMe"
+                rows={4}
+                maxLength={1500}
+                {...inv("aboutMe")}
+                {...register("aboutMe")}
+              />
+            </Field>
             <Field id="howHeard" label="How did you hear about us?" error={err("howHeard")}>
               <NativeSelect id="howHeard" {...register("howHeard")}>
                 <option value="">Prefer not to say</option>
@@ -878,6 +914,8 @@ export function PrescreenForm({
             <PrescreenPhotos
               files={photos}
               onChange={setPhotos}
+              video={video}
+              onVideoChange={setVideo}
               error={photoError}
               onError={setPhotoError}
             />

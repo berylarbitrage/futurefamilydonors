@@ -162,6 +162,33 @@ describe("POST /api/apply", () => {
     expect(apps()).toHaveLength(0);
   });
 
+  it("signs an extra upload url for an optional video and stores the about-me answers", async () => {
+    const res = await POST(
+      req({
+        donorType: "egg",
+        data: eggData({ occupation: " Nursing student ", aboutMe: "I love hiking." }),
+        video: { contentType: "video/quicktime", size: 20_000_000 },
+      }),
+    );
+    const body = (await res.json()) as { videoUpload?: { path: string } };
+    expect(body.videoUpload?.path).toMatch(/\.mov$/);
+    expect(apps()[0]!.prescreen_details).toMatchObject({
+      occupation: "Nursing student",
+      aboutMe: "I love hiking.",
+    });
+  });
+
+  it("rejects videos over 50 MB or of the wrong type", async () => {
+    for (const video of [
+      { contentType: "video/mp4", size: 60 * 1024 * 1024 },
+      { contentType: "application/pdf", size: 1000 },
+    ]) {
+      const res = await POST(req({ donorType: "egg", data: eggData(), video }));
+      expect(res.status).toBe(400);
+    }
+    expect(apps()).toHaveLength(0);
+  });
+
   it("stores an eligible application and sends eligible + admin emails", async () => {
     const res = await POST(req({ donorType: "egg", data: eggData() }));
     expect(res.status).toBe(200);
