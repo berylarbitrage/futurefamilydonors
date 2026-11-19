@@ -11,6 +11,9 @@ import { ageOn, parseIsoDate } from "@/lib/dates";
 /** How many extra schools an applicant can add besides the first one. */
 export const MAX_OTHER_SCHOOLS = 4;
 
+/** Most previous donations an applicant can list. */
+export const MAX_PREV_DONATIONS = 20;
+
 export const HOW_HEARD = ["Google", "Instagram", "TikTok", "Facebook", "Friend", "Other"] as const;
 export const BIRTH_CONTROL = ["None", "Pill", "IUD", "Implant", "Shot", "Other"] as const;
 export const YES_NO = ["yes", "no"] as const;
@@ -74,10 +77,11 @@ export const step1Schema = z.object({
 
 /** Follow-up questions when "Have you donated before?" is Yes. */
 export const previousDonationSchema = {
-  prevDonationCount: num(1, 50, "number of donations").optional(),
-  prevDonationWhen: optText(300),
+  /** One calendar date (YYYY-MM-DD) per previous donation; the count is the list length. */
+  prevDonationDates: z.array(z.string().max(10)).max(MAX_PREV_DONATIONS).optional(),
   prevEggsRetrieved: optText(300), // egg only
-  prevPregnancyKnown: z.enum(YES_NO_UNKNOWN).optional(),
+  // nullish: an unanswered radio group is null; the "Please choose" message comes from conditionalIssues.
+  prevPregnancyKnown: z.enum(YES_NO_UNKNOWN).nullish(),
   prevAgency: optText(300),
 };
 
@@ -132,8 +136,13 @@ export function conditionalIssues(type: DonorType, v: Values): Record<string, st
     if (blank(v.city)) out.city = "Please enter your city";
   }
   if (v.previousDonation === "yes") {
-    if (blank(v.prevDonationCount)) out.prevDonationCount = "Please enter how many times";
-    if (blank(v.prevDonationWhen)) out.prevDonationWhen = "Please tell us roughly when";
+    const dates = (v.prevDonationDates as string[] | undefined) ?? [];
+    const today = new Date().toISOString().slice(0, 10);
+    if (dates.length === 0) out.prevDonationDates = "Please add at least one donation date";
+    else if (dates.some((d) => !parseIsoDate(d)))
+      out.prevDonationDates = "Please pick a date for each donation";
+    else if (dates.some((d) => d > today))
+      out.prevDonationDates = "Donation dates can't be in the future";
     if (type === "egg" && blank(v.prevEggsRetrieved))
       out.prevEggsRetrieved = "Please enter an approximate number (or 'Not sure')";
     if (blank(v.prevPregnancyKnown)) out.prevPregnancyKnown = "Please choose an option";

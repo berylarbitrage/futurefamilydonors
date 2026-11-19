@@ -199,8 +199,7 @@ describe("POST /api/apply", () => {
     const paths = (await missing.json()).issues.map((i: { path: string }) => i.path).sort();
     expect(paths).toEqual([
       "prevAgency",
-      "prevDonationCount",
-      "prevDonationWhen",
+      "prevDonationDates",
       "prevEggsRetrieved",
       "prevPregnancyKnown",
     ]);
@@ -210,8 +209,7 @@ describe("POST /api/apply", () => {
         data: eggData({
           email: "jo@example.com",
           previousDonation: "yes",
-          prevDonationCount: 2,
-          prevDonationWhen: "2022 and 2024",
+          prevDonationDates: ["2024-03-15", "2022-06-01"],
           prevEggsRetrieved: "about 15 each",
           prevPregnancyKnown: "unknown",
           prevAgency: "Sample Fertility Clinic",
@@ -223,7 +221,7 @@ describe("POST /api/apply", () => {
       schools: ["University of Illinois"],
       previousDonation: {
         count: 2,
-        when: "2022 and 2024",
+        dates: ["2022-06-01", "2024-03-15"],
         eggsRetrieved: "about 15 each",
         pregnancyKnown: "unknown",
         agencyOrClinic: "Sample Fertility Clinic",
@@ -326,6 +324,29 @@ describe("POST /api/apply", () => {
     for (let i = 0; i < 11; i++) statuses.push((await POST(mk())).status);
     expect(statuses.slice(0, 10).every((s) => s === 400)).toBe(true);
     expect(statuses[10]).toBe(429);
+  });
+
+  it("rejects donation dates that are blank or in the future", async () => {
+    for (const [dates, msg] of [
+      [[""], "Please pick a date for each donation"],
+      [["2999-01-01"], "Donation dates can't be in the future"],
+    ] as const) {
+      const res = await POST(
+        req({
+          donorType: "sperm",
+          data: eggData({
+            email: "x@example.com",
+            previousDonation: "yes",
+            prevDonationDates: dates,
+            prevPregnancyKnown: "no",
+            prevAgency: "Clinic",
+          }),
+        }),
+      );
+      expect(res.status).toBe(400);
+      const issues = (await res.json()).issues as { path: string; message: string }[];
+      expect(issues.find((i) => i.path === "prevDonationDates")?.message).toBe(msg);
+    }
   });
 
   it("returns a diagnostic reference when the database fails", async () => {

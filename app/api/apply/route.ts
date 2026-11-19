@@ -127,8 +127,8 @@ export async function POST(req: Request) {
   const prescreenDetails: Record<string, unknown> = { schools };
   if (d.previousDonation === "yes") {
     prescreenDetails.previousDonation = {
-      count: d.prevDonationCount ?? null,
-      when: d.prevDonationWhen || null,
+      count: d.prevDonationDates?.length ?? 0,
+      dates: [...(d.prevDonationDates ?? [])].sort(),
       ...(isEgg ? { eggsRetrieved: d.prevEggsRetrieved || null } : {}),
       pregnancyKnown: d.prevPregnancyKnown ?? null,
       agencyOrClinic: d.prevAgency || null,

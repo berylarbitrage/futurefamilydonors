@@ -13,6 +13,7 @@ import {
   BIRTH_CONTROL,
   HOW_HEARD,
   MAX_OTHER_SCHOOLS,
+  MAX_PREV_DONATIONS,
   conditionalIssues,
   type eggApplicationSchema,
   type spermApplicationSchema,
@@ -67,8 +68,7 @@ function stepFields(type: DonorType): FieldName[][] {
 }
 
 const PREV_DONATION_FIELDS: FieldName[] = [
-  "prevDonationCount",
-  "prevDonationWhen",
+  "prevDonationDates",
   "prevEggsRetrieved",
   "prevPregnancyKnown",
   "prevAgency",
@@ -199,6 +199,13 @@ export function PrescreenForm({
   const otherSchools = (watch("otherSchools") ?? []) as string[];
   const setOtherSchools = (list: string[]) =>
     form.setValue("otherSchools", list, { shouldDirty: true });
+
+  // Previous donations: one calendar date per donation; start with one empty row.
+  const savedDates = watch("prevDonationDates") as string[] | undefined;
+  const prevDonationDates = savedDates?.length ? savedDates : [""];
+  const setPrevDonationDates = (list: string[]) =>
+    form.setValue("prevDonationDates", list, { shouldDirty: true });
+  const todayIso = new Date().toISOString().slice(0, 10);
 
   const goTo = (s: number) => {
     setStep(s);
@@ -650,36 +657,71 @@ export function PrescreenForm({
             {donatedBefore && (
               <div className="border-ink bg-sun-soft space-y-5 rounded-[12px] border-3 border-dashed p-4">
                 <p className="text-sm font-bold">Tell us about your previous donations</p>
-                <Field
-                  id="prevDonationCount"
-                  label="How many times have you donated?"
-                  required
-                  error={err("prevDonationCount")}
-                >
-                  <Input
-                    id="prevDonationCount"
-                    type="number"
-                    inputMode="numeric"
-                    min={1}
-                    max={50}
-                    {...inv("prevDonationCount")}
-                    {...register("prevDonationCount", { setValueAs: toNumber })}
-                  />
-                </Field>
-                <Field
-                  id="prevDonationWhen"
-                  label="Roughly when was each donation?"
-                  hint="For example: March 2023, Fall 2024"
-                  required
-                  error={err("prevDonationWhen")}
-                >
-                  <Input
-                    id="prevDonationWhen"
-                    maxLength={300}
-                    {...inv("prevDonationWhen")}
-                    {...register("prevDonationWhen")}
-                  />
-                </Field>
+                <fieldset className="space-y-3" aria-describedby="prevDonationDates-hint">
+                  <legend className="text-sm font-bold">
+                    When was each donation? <span className="text-destructive">*</span>
+                  </legend>
+                  <p id="prevDonationDates-hint" className="text-muted -mt-1 text-xs">
+                    Add one row per donation and pick the date from the calendar. If you don&apos;t
+                    remember the exact day, pick a date close to it.
+                  </p>
+                  {prevDonationDates.map((value, i) => (
+                    <div key={i} className="flex items-end gap-2">
+                      <Field
+                        id={`prevDonationDates-${i}`}
+                        label={`Donation ${i + 1}`}
+                        className="flex-1"
+                      >
+                        <Input
+                          id={`prevDonationDates-${i}`}
+                          type="date"
+                          max={todayIso}
+                          value={value}
+                          onChange={(e) =>
+                            setPrevDonationDates(
+                              prevDonationDates.map((v, j) => (j === i ? e.target.value : v)),
+                            )
+                          }
+                        />
+                      </Field>
+                      {prevDonationDates.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Remove donation ${i + 1}`}
+                          onClick={() =>
+                            setPrevDonationDates(prevDonationDates.filter((_, j) => j !== i))
+                          }
+                        >
+                          <X aria-hidden />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  {prevDonationDates.length < MAX_PREV_DONATIONS && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPrevDonationDates([...prevDonationDates, ""])}
+                    >
+                      <Plus aria-hidden /> Add another donation
+                    </Button>
+                  )}
+                  <p className="text-sm font-semibold">
+                    Total donations: {prevDonationDates.length}
+                  </p>
+                  {err("prevDonationDates") && (
+                    <p
+                      id="prevDonationDates-error"
+                      role="alert"
+                      className="text-destructive text-sm"
+                    >
+                      {err("prevDonationDates")}
+                    </p>
+                  )}
+                </fieldset>
                 {type === "egg" && (
                   <Field
                     id="prevEggsRetrieved"
