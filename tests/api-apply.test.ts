@@ -61,6 +61,7 @@ function eggData(over: Record<string, unknown> = {}) {
     state: "IL",
     zip: "60601",
     education: "Bachelor's",
+    school: "University of Illinois",
     howHeard: "Google",
     heightFt: 5,
     heightIn: 6,
@@ -206,6 +207,7 @@ describe("POST /api/apply", () => {
     );
     expect(ok.status).toBe(200);
     expect(apps()[0]!.prescreen_details).toEqual({
+      school: "University of Illinois",
       previousDonation: {
         count: 2,
         when: "2022 and 2024",

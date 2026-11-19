@@ -211,6 +211,7 @@ export default async function ApplicationDetailPage({
                   `${app.date_of_birth} (age ${ageOn(app.date_of_birth, new Date())})`,
                 ],
                 ["Education", app.education],
+                ["School", (app.prescreen_details as { school?: string } | null)?.school],
                 [
                   "Height",
                   app.height_in ? `${Math.floor(app.height_in / 12)}'${app.height_in % 12}"` : null,

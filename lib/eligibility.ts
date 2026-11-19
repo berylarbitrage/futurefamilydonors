@@ -82,7 +82,7 @@ export function evaluate(
   if (!(age >= rules.minAge)) reasons.push("age_too_young");
   else if (age > rules.maxAge) reasons.push("age_too_old");
 
-  if (!(bmi < rules.maxBmi)) reasons.push("bmi");
+  if (!(bmi >= rules.minBmi && bmi < rules.maxBmi)) reasons.push("bmi");
 
   if (rules.requireNonSmoker && data.smoker !== "no") reasons.push("smoker");
 

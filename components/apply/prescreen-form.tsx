@@ -48,6 +48,7 @@ function stepFields(type: DonorType): FieldName[][] {
       "city",
       "postalCode",
       "education",
+      "school",
       "howHeard",
     ],
     [
@@ -105,6 +106,7 @@ export function PrescreenForm({
       smsConsent: false,
       privacyConsent: false as unknown as true,
       ref: "",
+      school: "",
       howHeard: "",
       country: DEFAULT_COUNTRY,
     },
@@ -465,6 +467,21 @@ export function PrescreenForm({
                   </option>
                 ))}
               </NativeSelect>
+            </Field>
+            <Field
+              id="school"
+              label="School name"
+              hint="The college or university you attend now, or the last one you attended."
+              required
+              error={err("school")}
+            >
+              <Input
+                id="school"
+                autoComplete="organization"
+                maxLength={120}
+                {...inv("school")}
+                {...register("school")}
+              />
             </Field>
             <Field id="howHeard" label="How did you hear about us?" error={err("howHeard")}>
               <NativeSelect id="howHeard" {...register("howHeard")}>

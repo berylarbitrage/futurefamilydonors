@@ -23,7 +23,7 @@ function weightFor(bmi: number, heightInches: number): number {
 
 const eggBase: EligibilityInput = {
   dateOfBirth: dobForAge(25),
-  education: "High school",
+  education: "Currently in college",
   heightFt: 5,
   heightIn: 5,
   weightLb: 130,
@@ -80,8 +80,8 @@ describe("evaluate: egg", () => {
     if (reason) expect(res.reasons).toContain(reason);
   });
 
-  it("age boundary: one day before 22nd birthday at max 31 + 1", () => {
-    // Turns 32 tomorrow -> still 31 today -> eligible
+  it("age boundary: one day before turning max + 1", () => {
+    // Turns max + 1 tomorrow -> still max today -> eligible
     const res = evaluate("egg", { ...eggBase, dateOfBirth: dobForAge(r.maxAge + 1, 1) }, NOW);
     expect(res.age).toBe(r.maxAge);
     expect(res.eligible).toBe(true);
@@ -98,6 +98,13 @@ describe("evaluate: egg", () => {
     expect(at.reasons).toContain("bmi");
   });
 
+  it("BMI must be at least the min", () => {
+    const h = 65;
+    const atMin = weightFor(r.minBmi, h);
+    expect(evaluate("egg", { ...eggBase, weightLb: atMin }, NOW).eligible).toBe(true);
+    expect(evaluate("egg", { ...eggBase, weightLb: atMin - 2 }, NOW).reasons).toContain("bmi");
+  });
+
   it("rejects smokers", () => {
     expect(evaluate("egg", { ...eggBase, smoker: "yes" }, NOW).reasons).toEqual(["smoker"]);
   });
@@ -108,9 +115,15 @@ describe("evaluate: egg", () => {
     ]);
   });
 
-  it("education: High school is the minimum and passes", () => {
-    expect(evaluate("egg", { ...eggBase, education: "High school" }, NOW).eligible).toBe(true);
+  it("education: Currently in college is the minimum", () => {
+    expect(evaluate("egg", { ...eggBase, education: "High school" }, NOW).reasons).toEqual([
+      "education",
+    ]);
+    expect(evaluate("egg", { ...eggBase, education: "Some college" }, NOW).reasons).toEqual([
+      "education",
+    ]);
     expect(evaluate("egg", { ...eggBase, education: "Graduate" }, NOW).eligible).toBe(true);
+    expect(evaluate("egg", { ...eggBase, education: "Doctorate (PhD)" }, NOW).eligible).toBe(true);
     expect(evaluate("egg", { ...eggBase, education: "None" }, NOW).reasons).toContain("education");
   });
 
