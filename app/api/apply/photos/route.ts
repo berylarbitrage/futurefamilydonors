@@ -4,6 +4,7 @@ import { PHOTO_LIMITS, VIDEO_LIMITS } from "@/lib/full-app";
 import { createAdminClient, PHOTO_BUCKET } from "@/lib/supabase/admin";
 import { log } from "@/lib/log";
 import { getFullApp, withSection } from "@/lib/portal";
+import { notifyAdminNewPrescreen } from "@/lib/admin/notify";
 
 /** Pre-screen photos must be confirmed within this window after applying. */
 const CONFIRM_WINDOW_MS = 60 * 60 * 1000;
@@ -12,11 +13,9 @@ const VIDEO_RE = /\.(mp4|mov|webm)$/;
 
 const bodySchema = z.object({
   applicationId: z.string().uuid(),
-  // Up to the photo limit plus one optional video.
-  paths: z
-    .array(z.string().max(200))
-    .min(1)
-    .max(PHOTO_LIMITS.maxCount + 1),
+  // Up to the photo limit plus one optional video. May be empty when every
+  // upload failed: the admin is still notified.
+  paths: z.array(z.string().max(200)).max(PHOTO_LIMITS.maxCount + 1),
 });
 
 /**
@@ -99,5 +98,6 @@ export async function POST(req: Request) {
       })
       .eq("application_id", applicationId);
   }
+  await notifyAdminNewPrescreen(db, applicationId);
   return json({ ok: true, saved: saved.length });
 }

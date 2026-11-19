@@ -370,7 +370,8 @@ export function PrescreenForm({
           setUploading({ done: ++finished, total: jobs.length });
         }),
       );
-      if (done.length) {
+      {
+        // Always confirm (even if every upload failed) so the team is notified.
         await fetch("/api/apply/photos", {
           method: "POST",
           headers: { "Content-Type": "application/json" },

@@ -11,6 +11,10 @@ export class FakeDb {
   objects = new Map<string, { size: number; mimetype: string }>();
   storage = {
     from: (_bucket: string) => ({
+      createSignedUrls: async (paths: string[], _ttl: number) => ({
+        data: paths.map((path) => ({ path, signedUrl: `https://cdn.test/${path}?sig=1` })),
+        error: null,
+      }),
       createSignedUploadUrl: async (path: string) => ({
         data: { path, token: `tok-${path}` },
         error: null,

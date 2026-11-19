@@ -23,8 +23,7 @@ import { log } from "@/lib/log";
 import { SITE, siteUrl } from "@/config/site";
 import EligibleEmail from "@/emails/eligible";
 import IneligibleEmail from "@/emails/ineligible";
-import AdminNewApplicationEmail from "@/emails/admin-new-application";
-import { prescreenSummary } from "@/lib/admin/prescreen-summary";
+import { notifyAdminNewPrescreen } from "@/lib/admin/notify";
 
 const DUPLICATE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
@@ -235,20 +234,6 @@ export async function POST(req: Request) {
         react: createElement(IneligibleEmail, { firstName: d.firstName }),
       });
     }
-    const adminTo = env("ADMIN_NOTIFY_EMAIL");
-    if (adminTo) {
-      await sendEmail({
-        to: adminTo,
-        subject: `New ${donorType} pre-screen: ${d.firstName} ${d.lastName.charAt(0)}.`,
-        react: createElement(AdminNewApplicationEmail, {
-          name: `${d.firstName} ${d.lastName}`,
-          donorType,
-          eligible: result.eligible,
-          adminUrl: siteUrl(`/admin/applications/${applicationId}`),
-          details: prescreenSummary(row, { photos: photos.length, video: !!video }),
-        }),
-      });
-    }
   });
 
   // One-time signed upload URLs for the pre-screen photos. The browser uploads
@@ -270,6 +255,12 @@ export async function POST(req: Request) {
     log.error("apply: photo upload urls failed", err, { applicationId });
     uploads.length = 0;
     videoUpload = null;
+  }
+
+  // The admin email includes the photos, so it goes out once the browser has
+  // uploaded them (POST /api/apply/photos). Without upload links, send it now.
+  if (!uploads.length && !videoUpload) {
+    after(() => notifyAdminNewPrescreen(db, applicationId));
   }
 
   // Clear the referral cookie once it has been attributed.

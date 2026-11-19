@@ -212,9 +212,25 @@ describe("POST /api/apply", () => {
       status: "full_app_pending",
     });
     for (const t of afterTasks) await t();
-    expect(sent.map((s) => s.to)).toEqual(["jane@example.com", "admin@example.com"]);
-    // Admin subject contains no health info
-    expect(sent[1]!.subject).not.toMatch(/bmi|smok|cycle/i);
+    // The admin email follows once the photos are uploaded (/api/apply/photos).
+    expect(sent.map((s) => s.to)).toEqual(["jane@example.com"]);
+  });
+
+  it("emails the admin straight away when no photo upload links could be made", async () => {
+    const orig = db.storage.from;
+    db.storage.from = ((b: string) => ({
+      ...orig(b),
+      createSignedUploadUrl: async () => ({ data: null, error: new Error("storage down") }),
+    })) as unknown as typeof orig;
+    try {
+      await POST(req({ donorType: "egg", data: eggData() }));
+      for (const t of afterTasks) await t();
+      expect(sent.map((s) => s.to)).toEqual(["jane@example.com", "admin@example.com"]);
+      // Subject never contains health info
+      expect(sent[1]!.subject).not.toMatch(/bmi|smok|cycle/i);
+    } finally {
+      db.storage.from = orig;
+    }
   });
 
   it("never auto-signs-in an existing account (email backup link only)", async () => {
@@ -451,7 +467,8 @@ describe("POST /api/apply", () => {
       const res = await POST(req({ donorType: "egg", data: eggData() }));
       expect(res.status).toBe(200);
       for (const t of afterTasks) await t();
-      expect(sent.map((s) => s.to)).toEqual(["jane@example.com", "admin@example.com"]);
+      // The admin email follows once the photos are uploaded (/api/apply/photos).
+      expect(sent.map((s) => s.to)).toEqual(["jane@example.com"]);
     } finally {
       ensureUserFails = false;
     }
