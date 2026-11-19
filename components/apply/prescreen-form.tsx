@@ -6,12 +6,14 @@ import { useEffect, useRef, useState } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
-import { ArrowLeft, Clock, Lock } from "lucide-react";
+import { ArrowLeft, Clock, Lock, Plus, X } from "lucide-react";
 import {
   applicationSchema,
   stepSchemas,
   BIRTH_CONTROL,
   HOW_HEARD,
+  MAX_OTHER_SCHOOLS,
+  MAX_PREV_DONATIONS,
   conditionalIssues,
   type eggApplicationSchema,
   type spermApplicationSchema,
@@ -30,12 +32,16 @@ import { Button } from "@/components/ui/button";
 import { YesNo } from "@/components/forms/yes-no";
 import { Honeypot } from "@/components/forms/honeypot";
 import { Turnstile, type TurnstileStatus } from "@/components/forms/turnstile";
+import { SchoolCombobox } from "@/components/forms/school-combobox";
+import { PrescreenPhotos } from "@/components/apply/prescreen-photos";
+import { PHOTO_LIMITS } from "@/lib/full-app";
+import { createClient } from "@/lib/supabase/client";
 
 type FormValues = z.input<typeof eggApplicationSchema> &
   Partial<z.input<typeof spermApplicationSchema>>;
 type FieldName = keyof FormValues;
 
-const STEP_TITLES = ["About you", "Health basics", "Contact details"] as const;
+const STEP_TITLES = ["About you", "Health basics", "Photos & contact"] as const;
 
 function stepFields(type: DonorType): FieldName[][] {
   return [
@@ -49,6 +55,7 @@ function stepFields(type: DonorType): FieldName[][] {
       "postalCode",
       "education",
       "school",
+      "otherSchools",
       "howHeard",
     ],
     [
@@ -65,8 +72,7 @@ function stepFields(type: DonorType): FieldName[][] {
 }
 
 const PREV_DONATION_FIELDS: FieldName[] = [
-  "prevDonationCount",
-  "prevDonationWhen",
+  "prevDonationDates",
   "prevEggsRetrieved",
   "prevPregnancyKnown",
   "prevAgency",
@@ -91,6 +97,10 @@ export function PrescreenForm({
   const [tsStatus, setTsStatus] = useState<TurnstileStatus>("loading");
   const [tsReset, setTsReset] = useState(0);
   const [honeypot, setHoneypot] = useState("");
+  // Photos stay in memory (not in the saved draft) until submit.
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const restored = useRef(false);
   const stopPersisting = useRef(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -107,6 +117,7 @@ export function PrescreenForm({
       privacyConsent: false as unknown as true,
       ref: "",
       school: "",
+      otherSchools: [],
       howHeard: "",
       country: DEFAULT_COUNTRY,
     },
@@ -193,6 +204,17 @@ export function PrescreenForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch, step, storageKey, type]);
 
+  const otherSchools = (watch("otherSchools") ?? []) as string[];
+  const setOtherSchools = (list: string[]) =>
+    form.setValue("otherSchools", list, { shouldDirty: true });
+
+  // Previous donations: one calendar date per donation; start with one empty row.
+  const savedDates = watch("prevDonationDates") as string[] | undefined;
+  const prevDonationDates = savedDates?.length ? savedDates : [""];
+  const setPrevDonationDates = (list: string[]) =>
+    form.setValue("prevDonationDates", list, { shouldDirty: true });
+  const todayIso = new Date().toISOString().slice(0, 10);
+
   const goTo = (s: number) => {
     setStep(s);
     try {
@@ -230,10 +252,17 @@ export function PrescreenForm({
     goTo(step + 1);
   };
 
-  const contactFallback = `If this keeps happening, email ${SITE.contactEmail} or call ${SITE.contactPhone} and we'll help you apply.`;
+  const contactFallback = `If this keeps happening, email ${SITE.contactEmail} and we'll help you apply.`;
 
   const onSubmit = async (values: FormValues) => {
     setServerError(null);
+    if (photos.length < PHOTO_LIMITS.minCount || photos.length > PHOTO_LIMITS.maxCount) {
+      setPhotoError(
+        `Please add ${PHOTO_LIMITS.minCount}–${PHOTO_LIMITS.maxCount} photos (you have ${photos.length}).`,
+      );
+      document.getElementById("photos-hint")?.scrollIntoView({ block: "center" });
+      return;
+    }
     if (turnstileSiteKey && !token) {
       setServerError(
         tsStatus === "error"
@@ -252,6 +281,7 @@ export function PrescreenForm({
           data: values,
           turnstileToken: token,
           website: honeypot,
+          photos: photos.map((f) => ({ contentType: f.type, size: f.size })),
         }),
       });
     } catch {
@@ -264,6 +294,8 @@ export function PrescreenForm({
     const body = (await res.json().catch(() => ({}))) as {
       eligible?: boolean;
       continueUrl?: string;
+      applicationId?: string;
+      uploads?: { path: string; token: string }[];
       error?: string;
       code?: string;
       ref?: string;
@@ -293,6 +325,30 @@ export function PrescreenForm({
       sessionStorage.removeItem(storageKey);
     } catch {}
     trackLead(type);
+    // Upload the photos with the one-time URLs, then record them. A failed
+    // upload doesn't lose the application — photos can be added in the portal.
+    if (body.applicationId && body.uploads?.length) {
+      setUploading(true);
+      const done: string[] = [];
+      const bucket = createClient().storage.from("donor-photos");
+      await Promise.all(
+        body.uploads.map(async (u, i) => {
+          const file = photos[i];
+          if (!file) return;
+          const { error } = await bucket.uploadToSignedUrl(u.path, u.token, file, {
+            contentType: file.type,
+          });
+          if (!error) done.push(u.path);
+        }),
+      );
+      if (done.length) {
+        await fetch("/api/apply/photos", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ applicationId: body.applicationId, paths: done }),
+        }).catch(() => undefined);
+      }
+    }
     if (body.continueUrl) {
       // Signed in: continue straight into the full application (full page load
       // so the new session cookie is used everywhere).
@@ -471,18 +527,52 @@ export function PrescreenForm({
             <Field
               id="school"
               label="School name"
-              hint="The college or university you attend now, or the last one you attended."
+              hint="Search and pick your college or university. Not listed? Just type the full name. Attended more than one? Add them below."
               required
               error={err("school")}
             >
-              <Input
+              <SchoolCombobox
                 id="school"
-                autoComplete="organization"
-                maxLength={120}
-                {...inv("school")}
-                {...register("school")}
+                value={(watch("school") as string | undefined) ?? ""}
+                onChange={(v) => form.setValue("school", v, { shouldDirty: true })}
+                invalid={!!e.school}
+                describedBy={e.school ? "school-error" : undefined}
               />
             </Field>
+            {otherSchools.map((value, i) => (
+              <div key={i} className="flex items-end gap-2">
+                <Field
+                  id={`otherSchools-${i}`}
+                  label={`Another school (${i + 2})`}
+                  className="flex-1"
+                >
+                  <SchoolCombobox
+                    id={`otherSchools-${i}`}
+                    value={value}
+                    onChange={(v) => setOtherSchools(otherSchools.map((o, j) => (j === i ? v : o)))}
+                  />
+                </Field>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label={`Remove school ${i + 2}`}
+                  onClick={() => setOtherSchools(otherSchools.filter((_, j) => j !== i))}
+                >
+                  <X aria-hidden />
+                </Button>
+              </div>
+            ))}
+            {otherSchools.length < MAX_OTHER_SCHOOLS && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setOtherSchools([...otherSchools, ""])}
+              >
+                <Plus aria-hidden /> Add another school
+              </Button>
+            )}
             <Field id="howHeard" label="How did you hear about us?" error={err("howHeard")}>
               <NativeSelect id="howHeard" {...register("howHeard")}>
                 <option value="">Prefer not to say</option>
@@ -605,36 +695,71 @@ export function PrescreenForm({
             {donatedBefore && (
               <div className="border-ink bg-sun-soft space-y-5 rounded-[12px] border-3 border-dashed p-4">
                 <p className="text-sm font-bold">Tell us about your previous donations</p>
-                <Field
-                  id="prevDonationCount"
-                  label="How many times have you donated?"
-                  required
-                  error={err("prevDonationCount")}
-                >
-                  <Input
-                    id="prevDonationCount"
-                    type="number"
-                    inputMode="numeric"
-                    min={1}
-                    max={50}
-                    {...inv("prevDonationCount")}
-                    {...register("prevDonationCount", { setValueAs: toNumber })}
-                  />
-                </Field>
-                <Field
-                  id="prevDonationWhen"
-                  label="Roughly when was each donation?"
-                  hint="For example: March 2023, Fall 2024"
-                  required
-                  error={err("prevDonationWhen")}
-                >
-                  <Input
-                    id="prevDonationWhen"
-                    maxLength={300}
-                    {...inv("prevDonationWhen")}
-                    {...register("prevDonationWhen")}
-                  />
-                </Field>
+                <fieldset className="space-y-3" aria-describedby="prevDonationDates-hint">
+                  <legend className="text-sm font-bold">
+                    When was each donation? <span className="text-destructive">*</span>
+                  </legend>
+                  <p id="prevDonationDates-hint" className="text-muted -mt-1 text-xs">
+                    Add one row per donation and pick the date from the calendar. If you don&apos;t
+                    remember the exact day, pick a date close to it.
+                  </p>
+                  {prevDonationDates.map((value, i) => (
+                    <div key={i} className="flex items-end gap-2">
+                      <Field
+                        id={`prevDonationDates-${i}`}
+                        label={`Donation ${i + 1}`}
+                        className="flex-1"
+                      >
+                        <Input
+                          id={`prevDonationDates-${i}`}
+                          type="date"
+                          max={todayIso}
+                          value={value}
+                          onChange={(e) =>
+                            setPrevDonationDates(
+                              prevDonationDates.map((v, j) => (j === i ? e.target.value : v)),
+                            )
+                          }
+                        />
+                      </Field>
+                      {prevDonationDates.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Remove donation ${i + 1}`}
+                          onClick={() =>
+                            setPrevDonationDates(prevDonationDates.filter((_, j) => j !== i))
+                          }
+                        >
+                          <X aria-hidden />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  {prevDonationDates.length < MAX_PREV_DONATIONS && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPrevDonationDates([...prevDonationDates, ""])}
+                    >
+                      <Plus aria-hidden /> Add another donation
+                    </Button>
+                  )}
+                  <p className="text-sm font-semibold">
+                    Total donations: {prevDonationDates.length}
+                  </p>
+                  {err("prevDonationDates") && (
+                    <p
+                      id="prevDonationDates-error"
+                      role="alert"
+                      className="text-destructive text-sm"
+                    >
+                      {err("prevDonationDates")}
+                    </p>
+                  )}
+                </fieldset>
                 {type === "egg" && (
                   <Field
                     id="prevEggsRetrieved"
@@ -713,6 +838,12 @@ export function PrescreenForm({
 
         {step === 2 && (
           <>
+            <PrescreenPhotos
+              files={photos}
+              onChange={setPhotos}
+              error={photoError}
+              onError={setPhotoError}
+            />
             <div className="grid gap-5 sm:grid-cols-2">
               <Field id="firstName" label="First name" required error={err("firstName")}>
                 <Input
@@ -844,7 +975,11 @@ export function PrescreenForm({
             </Button>
           ) : (
             <Button key="submit" type="submit" size="lg" disabled={isSubmitting}>
-              {isSubmitting ? "Submitting…" : "Submit Application"}
+              {uploading
+                ? "Uploading photos…"
+                : isSubmitting
+                  ? "Submitting…"
+                  : "Submit Application"}
             </Button>
           )}
         </div>

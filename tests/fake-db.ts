@@ -7,6 +7,27 @@ type Row = Record<string, unknown>;
 export class FakeDb {
   tables: Record<string, Row[]> = {};
   rpcResults: Record<string, unknown> = {};
+  /** Uploaded storage objects: path -> metadata. */
+  objects = new Map<string, { size: number; mimetype: string }>();
+  storage = {
+    from: (_bucket: string) => ({
+      createSignedUploadUrl: async (path: string) => ({
+        data: { path, token: `tok-${path}` },
+        error: null,
+      }),
+      list: async (folder: string, opts?: { search?: string }) => ({
+        data: [...this.objects]
+          .filter(([p]) => p.startsWith(`${folder}/`))
+          .map(([p, metadata]) => ({ name: p.slice(folder.length + 1), metadata }))
+          .filter((o) => !opts?.search || o.name.includes(opts.search)),
+        error: null,
+      }),
+      remove: async (paths: string[]) => {
+        paths.forEach((p) => this.objects.delete(p));
+        return { data: null, error: null };
+      },
+    }),
+  };
 
   from(table: string) {
     this.tables[table] ??= [];

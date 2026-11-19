@@ -39,10 +39,7 @@ export async function POST(req: Request) {
     return errorJson("Please complete all sections before signing.", 400);
   }
   if (!photosComplete((photos ?? []).map((p) => p.kind as string))) {
-    return errorJson(
-      "Please upload at least 3 photos, including one childhood photo and one recent photo.",
-      400,
-    );
+    return errorJson("Please upload at least 3 photos.", 400);
   }
 
   const now = new Date().toISOString();

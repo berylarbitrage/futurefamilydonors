@@ -20,16 +20,17 @@ export default function PrivacyPage() {
         <h2>1. Who we are</h2>
         <p>
           {SITE.brand} (&quot;we&quot;, &quot;us&quot;) recruits and pre-screens egg and sperm
-          donors. Contact: {SITE.contactEmail}, {SITE.contactPhone}.
+          donors. Contact: {SITE.contactEmail}.
         </p>
 
         <h2>2. Information we collect</h2>
         <ul>
           <li>
-            <strong>Pre-screen:</strong> date of birth, state, ZIP code, education, school name,
-            height, weight, nicotine use, basic reproductive-health answers, prior donation, contact
-            details (name, email, phone), consent choices, and how you heard about us. We do not
-            collect your SSN, medical records, photos, or race/ethnicity at this stage.
+            <strong>Pre-screen:</strong> date of birth, state, ZIP code, education, school name(s),
+            height, weight, nicotine use, basic reproductive-health answers, prior donation dates,
+            3–5 photos of you, contact details (name, email, phone), consent choices, and how you
+            heard about us. We do not collect your SSN, medical records, or race/ethnicity at this
+            stage.
           </li>
           <li>
             <strong>Full application (if invited):</strong> personal background, physical
@@ -86,7 +87,7 @@ export default function PrivacyPage() {
           personal information (including health information); and the right not to be discriminated
           against for exercising these rights. We do not sell or &quot;share&quot; personal
           information for cross-context behavioral advertising without consent. To exercise your
-          rights, email {SITE.contactEmail} or call {SITE.contactPhone}. [ATTORNEY TO COMPLETE.]
+          rights, email {SITE.contactEmail}. [ATTORNEY TO COMPLETE.]
         </p>
 
         <h2 id="cookies">8. Cookies</h2>

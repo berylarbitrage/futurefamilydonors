@@ -1,6 +1,6 @@
 /**
  * Coordinator message templates. Placeholders: {firstName}, {brand},
- * {portalUrl}, {phone}. Admins can edit the text before sending.
+ * {portalUrl}. Admins can edit the text before sending.
  * Never put medical details in templates — messages are delivered by email.
  */
 export interface MessageTemplate {
@@ -34,7 +34,7 @@ Just a friendly reminder that your full application is waiting for you. You can 
 
 {portalUrl}
 
-If anything is unclear, simply reply to this email or call us at {phone}.
+If anything is unclear, simply reply to this email.
 
 Warmly,
 Your {brand} coordinator`,
@@ -45,7 +45,7 @@ Your {brand} coordinator`,
     subject: "A quick question about your application",
     body: `Hi {firstName},
 
-Thank you for your application. We need a little more information before we can move forward. Could you please give us a call at {phone} or reply to this email with a good time to talk?
+Thank you for your application. We need a little more information before we can move forward. Could you please reply to this email with a good time to talk?
 
 Please don't send medical details by email — we'll go over anything personal by phone or in your secure portal.
 

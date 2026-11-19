@@ -211,7 +211,7 @@ export default async function ApplicationDetailPage({
                   `${app.date_of_birth} (age ${ageOn(app.date_of_birth, new Date())})`,
                 ],
                 ["Education", app.education],
-                ["School", (app.prescreen_details as { school?: string } | null)?.school],
+                ["Schools", schoolsOf(app.prescreen_details)],
                 [
                   "Height",
                   app.height_in ? `${Math.floor(app.height_in / 12)}'${app.height_in % 12}"` : null,
@@ -352,13 +352,19 @@ export default async function ApplicationDetailPage({
 }
 
 /** Follow-up answers to "Have you donated before?" (stored in prescreen_details). */
+function schoolsOf(details: unknown): string[] | null {
+  const d = details as { schools?: string[]; school?: string } | null;
+  if (d?.schools?.length) return d.schools;
+  return d?.school ? [d.school] : null;
+}
+
 function previousDonationRows(details: unknown): [string, unknown][] {
   const p = (details as { previousDonation?: Record<string, unknown> } | null)?.previousDonation;
   if (!p) return [];
   const pregnancy = { yes: "Yes", no: "No", unknown: "Unknown" } as Record<string, string>;
   return [
     ["· Times donated", p.count],
-    ["· When", p.when],
+    ["· When", Array.isArray(p.dates) ? (p.dates as string[]).join(", ") : p.when],
     ...(p.eggsRetrieved !== undefined
       ? ([["· Eggs retrieved", p.eggsRetrieved]] as [string, unknown][])
       : []),

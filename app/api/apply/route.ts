@@ -13,7 +13,7 @@ import { evaluate } from "@/lib/eligibility";
 import { MIN_APPLICANT_AGE } from "@/config/eligibility";
 import { verifyTurnstile } from "@/lib/turnstile";
 import { clientIp } from "@/lib/rate-limit";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient, PHOTO_BUCKET } from "@/lib/supabase/admin";
 import { isSupabaseConfigured, env } from "@/lib/env";
 import { REF_CODE_RE, REF_COOKIE } from "@/lib/referral";
 import { createMagicLink, ensureUserDetailed, signInNewApplicant } from "@/lib/auth-links";
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
 
   const body = await parseBody(req, applyRequestSchema);
   if (!body.ok) return body.res;
-  const { donorType, data: raw, turnstileToken, website } = body.data;
+  const { donorType, data: raw, turnstileToken, website, photos } = body.data;
 
   // Honeypot: pretend success, store nothing.
   if (website) return json({ ok: true, eligible: false });
@@ -123,11 +123,12 @@ export async function POST(req: Request) {
   const yes = (v: string | undefined) => (v === undefined ? null : v === "yes");
   const isEgg = donorType === "egg";
   const us = isUnitedStates(d.country);
-  const prescreenDetails: Record<string, unknown> = { school: d.school };
+  const schools = [d.school, ...(d.otherSchools ?? [])].map((s) => s.trim()).filter(Boolean);
+  const prescreenDetails: Record<string, unknown> = { schools };
   if (d.previousDonation === "yes") {
     prescreenDetails.previousDonation = {
-      count: d.prevDonationCount ?? null,
-      when: d.prevDonationWhen || null,
+      count: d.prevDonationDates?.length ?? 0,
+      dates: [...(d.prevDonationDates ?? [])].sort(),
       ...(isEgg ? { eggsRetrieved: d.prevEggsRetrieved || null } : {}),
       pregnancyKnown: d.prevPregnancyKnown ?? null,
       agencyOrClinic: d.prevAgency || null,
@@ -242,10 +243,30 @@ export async function POST(req: Request) {
     }
   });
 
+  // One-time signed upload URLs for the pre-screen photos. The browser uploads
+  // straight to the private bucket, then confirms via /api/apply/photos.
+  const uploads: { path: string; token: string }[] = [];
+  try {
+    const bucket = db.storage.from(PHOTO_BUCKET);
+    for (const p of photos) {
+      const ext = p.contentType === "image/png" ? "png" : "jpg";
+      const { data, error } = await bucket.createSignedUploadUrl(
+        `${applicationId}/${crypto.randomUUID()}.${ext}`,
+      );
+      if (error || !data) throw error ?? new Error("no signed url");
+      uploads.push({ path: data.path, token: data.token });
+    }
+  } catch (err) {
+    log.error("apply: photo upload urls failed", err, { applicationId });
+    uploads.length = 0;
+  }
+
   // Clear the referral cookie once it has been attributed.
   const res = json({
     ok: true,
     eligible: result.eligible,
+    applicationId,
+    uploads,
     ...(continueUrl ? { continueUrl } : {}),
   });
   if (referralCode) res.cookies.delete(REF_COOKIE);

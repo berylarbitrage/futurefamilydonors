@@ -87,15 +87,15 @@ describe("evaluate: egg", () => {
     expect(res.eligible).toBe(true);
   });
 
-  it("BMI must be strictly below the max", () => {
+  it("BMI exactly at the max (25) still qualifies; above it does not", () => {
     const h = 65;
     const atMax = weightFor(r.maxBmi, h);
-    const below = evaluate("egg", { ...eggBase, weightLb: atMax - 1 }, NOW);
-    const at = evaluate("egg", { ...eggBase, weightLb: atMax }, NOW);
-    expect(below.bmi).toBeLessThan(r.maxBmi);
-    expect(below.eligible).toBe(true);
-    expect(at.bmi).toBeGreaterThanOrEqual(r.maxBmi);
-    expect(at.reasons).toContain("bmi");
+    const exact = evaluate("egg", { ...eggBase, weightLb: atMax }, NOW);
+    const over = evaluate("egg", { ...eggBase, weightLb: atMax + 1 }, NOW);
+    expect(exact.bmi).toBe(r.maxBmi);
+    expect(exact.eligible).toBe(true);
+    expect(over.bmi).toBeGreaterThan(r.maxBmi);
+    expect(over.reasons).toContain("bmi");
   });
 
   it("BMI must be at least the min", () => {
