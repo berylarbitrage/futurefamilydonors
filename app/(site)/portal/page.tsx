@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getRole, requireUser } from "@/lib/auth";
-import { homeFor } from "@/lib/roles";
+import { homeFor, isStaff } from "@/lib/roles";
 import { getFullApp, getOwnApplication } from "@/lib/portal";
 import { completionPercent } from "@/lib/full-app";
 import { STATUS_LABELS, type Status } from "@/lib/admin/constants";
@@ -17,10 +17,12 @@ export const metadata: Metadata = { title: "Applicant Portal" };
 
 export default async function PortalPage() {
   const { supabase, user } = await requireUser("/portal");
-  // Staff, partners and parents have their own areas.
   const role = await getRole(supabase, user.id);
-  if (role !== "applicant") redirect(homeFor(role));
   const app = await getOwnApplication(supabase, user.id);
+  // Staff, partners and parents without a donor application of their own go
+  // to their own area. With one, they see it here like any donor.
+  if (role !== "applicant" && !app) redirect(homeFor(role));
+  const staff = isStaff(role);
   const full = app ? await getFullApp(supabase, app.id) : null;
   const pct = completionPercent(full?.completed_sections ?? []);
 
@@ -48,6 +50,11 @@ export default async function PortalPage() {
         <h1 className="text-3xl font-extrabold md:text-4xl">
           {app ? `Welcome, ${app.first_name}` : "Applicant Portal"}
         </h1>
+        {staff && (
+          <Link href="/admin" className="text-sm underline">
+            Open admin
+          </Link>
+        )}
         <form action="/api/auth/signout" method="post">
           <Button variant="ghost" size="sm">
             Sign out

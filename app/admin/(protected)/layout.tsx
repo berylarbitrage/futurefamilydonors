@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { requireStaff } from "@/lib/auth";
+import { getOwnApplication } from "@/lib/portal";
 import { can, ROLE_LABELS } from "@/lib/roles";
 import { SITE } from "@/config/site";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +12,9 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { user, role } = await requireStaff(); // everyone else gets 404
+  const { supabase, user, role } = await requireStaff(); // everyone else gets 404
+  // Staff can be donors too (same email): link to their own application.
+  const ownApplication = await getOwnApplication(supabase, user.id);
   return (
     <div className="bg-background min-h-dvh">
       <header className="border-border bg-card border-b">
@@ -27,6 +30,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               <Link href="/catalog" className="hover:underline">
                 Donor catalog
               </Link>
+              {ownApplication && (
+                <Link href="/portal" className="hover:underline">
+                  My donor application
+                </Link>
+              )}
               {can(role, "manage_team") && (
                 <Link href="/admin/team" className="hover:underline">
                   Team
