@@ -18,6 +18,8 @@ export const ELIGIBILITY = {
     maxAge: 29,
     minBmi: 18,
     maxBmi: 25,
+    /** "BMI 18–25": a BMI of exactly 25 still qualifies. */
+    maxBmiInclusive: true,
     requireNonSmoker: true,
     requireRegularCycles: true,
     minEducation: "Currently in college",
@@ -27,6 +29,8 @@ export const ELIGIBILITY = {
     maxAge: 34,
     minBmi: 0,
     maxBmi: 27,
+    /** "BMI under 27": 27 itself does not qualify. */
+    maxBmiInclusive: false,
     minHeightInches: 68,
     requireNonSmoker: true,
     minEducation: "Currently in college",
