@@ -32,7 +32,21 @@ export default function EggDonorPage() {
             "Independent legal consultation",
             "Complication insurance for your cycle",
           ],
-          note: "For your time, effort and commitment. The exact amount depends on the program.",
+          note: (
+            <>
+              <span className="block space-y-0.5">
+                {SITE.eggCompTiers.map((t) => (
+                  <span key={t} className="block">
+                    {t}
+                  </span>
+                ))}
+              </span>
+              <span className="mt-2 block">
+                For your time, effort and commitment. The exact amount depends on how you&apos;re
+                matched.
+              </span>
+            </>
+          ),
         },
         steps: [
           { title: "Pre-screen", body: "A few basic questions online. About 3 minutes." },

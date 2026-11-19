@@ -1,6 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { FORM_SECTION_IDS } from "@/lib/full-app";
+import { FORM_SECTION_IDS, PHOTO_LIMITS } from "@/lib/full-app";
 
 export interface OwnApplication {
   id: string;
@@ -47,7 +47,9 @@ export async function getFullApp(supabase: SupabaseClient, applicationId: string
 }
 
 export function photosComplete(kinds: string[]): boolean {
-  return kinds.includes("childhood") && kinds.includes("recent");
+  return (
+    kinds.includes("childhood") && kinds.includes("recent") && kinds.length >= PHOTO_LIMITS.minCount
+  );
 }
 
 export function formSectionsComplete(completed: string[]): boolean {

@@ -9,14 +9,17 @@ export const SITE = {
   domain: "futurefamilydonors.com", // {{DOMAIN}}
   contactEmail: "info@futurefamilydonors.com", // {{CONTACT_EMAIL}} — TODO: confirm
   contactPhone: "(000) 000-0000", // {{CONTACT_PHONE}}
-  eggComp: "$8,000 – $12,000 per cycle", // {{EGG_COMP}}
-  /**
-   * Sperm donors are paid per completed donation (agency matching model, not a
-   * sperm-bank "monthly" model). Set `spermCompAmount` (e.g. "$1,000–$1,500")
-   * once the program amount is confirmed; until then the generic line shows.
-   */
-  spermCompAmount: null as string | null, // {{SPERM_COMP_AMOUNT}} — TODO: fill in when confirmed
-  spermCompGeneric: "Compensation provided per completed donation; amount varies by program",
+  eggComp: "$8,000 – $35,000+ per cycle", // {{EGG_COMP}}
+  /** Breakdown shown under the egg amount (home page card + egg landing page). */
+  eggCompTiers: [
+    "Egg bank match: $8,000 – $10,000",
+    "Family match: $10,000+",
+    "Elite donors start: $15,000+",
+    "Experienced donors earn more.",
+  ],
+  /** Sperm donors are paid per completed donation (agency matching model). */
+  spermCompAmount: "$3,000 – $20,000", // {{SPERM_COMP_AMOUNT}}
+  spermCompNote: "Paid per completed donation. Amount varies by program.",
   referralBonus: "$500", // {{REFERRAL_BONUS}}
   serviceArea: "Serving donors across the U.S. and internationally",
   tagline:
@@ -25,9 +28,7 @@ export const SITE = {
 } as const;
 
 /** Sperm-donor compensation line used everywhere on the site. */
-export const spermComp: string = SITE.spermCompAmount
-  ? `${SITE.spermCompAmount} per completed donation; amount varies by program`
-  : SITE.spermCompGeneric;
+export const spermComp: string = `${SITE.spermCompAmount} per donation`;
 
 /** Wording for who performs medical testing — keep it this general on purpose. */
 export const PARTNER_CLINICS_LINE =

@@ -63,6 +63,7 @@ export const step1Schema = z.object({
   city: optText(80),
   postalCode: optText(20),
   education: z.enum(EDUCATION_LEVELS, { error: "Please select your education level" }),
+  school: z.string().trim().min(1, "Please enter your school name").max(120),
   howHeard: z.enum(HOW_HEARD).optional().or(z.literal("")),
 });
 

@@ -1,5 +1,5 @@
 import { ELIGIBILITY } from "@/config/eligibility";
-import { PARTNER_CLINICS_LINE, SITE, spermComp } from "@/config/site";
+import { PARTNER_CLINICS_LINE, SITE } from "@/config/site";
 
 export interface FaqItem {
   q: string;
@@ -56,11 +56,11 @@ const REFER: FaqItem = {
 /* ---- Egg ------------------------------------------------------------------ */
 const EGG_PAY: FaqItem = {
   q: "What do egg donors get paid?",
-  a: `Typically ${SITE.eggComp}, for your time and commitment. Medical, travel, legal and insurance costs are covered on top of that.`,
+  a: "Your compensation depends on how you're matched. If your eggs are matched through an egg bank, you'll typically receive $8,000 – $10,000 per cycle. If you're matched directly with a family, compensation starts at $10,000 per cycle. Experienced donors receive higher compensation than first-time donors. Compensation is paid for your time and commitment, and all medical, travel, legal and insurance costs are covered on top of that.",
 };
 const EGG_REQ: FaqItem = {
   q: "Can I be an egg donor?",
-  a: `Quick check: ${egg.minAge}–${egg.maxAge} years old, BMI under ${egg.maxBmi}, non-smoker, regular cycles, and at least a high school diploma.`,
+  a: `Most of our donors are ${egg.minAge}–${egg.maxAge}, have a BMI under ${egg.maxBmi}, don't smoke or vape, have regular cycles, have no significant medical conditions, and are currently in college or have a college degree. Not sure you qualify? Take our 3-minute pre-screen to find out. Final eligibility is confirmed by our partner clinic.`,
 };
 const EGG_FERTILITY: FaqItem = {
   q: "Will it mess with my own fertility later?",
@@ -84,7 +84,7 @@ const EGG_COSTS: FaqItem = {
 };
 const EGG_WORK: FaqItem = {
   q: "Will I miss work or class?",
-  a: "Most monitoring appointments are early morning. Plan to take retrieval day off — maybe the day after too.",
+  a: "Probably some, so plan ahead. Donation is a real commitment. If you live near the clinic, most monitoring appointments are early in the morning, and you should take retrieval day and the day after off. If you're a travel donor, plan to be away for about 7–14 days around stimulation and retrieval. Your coordinator will give you a schedule in advance so you can arrange time off from work or school.",
 };
 const EGG_BC: FaqItem = {
   q: "I'm on birth control. Problem?",
@@ -96,13 +96,13 @@ const EGG_ANON: FaqItem = {
 };
 const EGG_AGAIN: FaqItem = {
   q: "Can I donate again?",
-  a: "Many donors can, within clinic guidelines and industry recommendations on total cycles.",
+  a: "Yes, many donors do! If your first cycle goes well and the clinic clears you medically, you can donate again. Following American Society for Reproductive Medicine (ASRM) guidelines, we limit donors to a maximum of six donation cycles. Experienced donors also receive higher compensation.",
 };
 
 /* ---- Sperm ---------------------------------------------------------------- */
 const SPERM_PAY: FaqItem = {
   q: "What do sperm donors get paid?",
-  a: `${spermComp}. It's paid for your time and commitment once a donation is completed.`,
+  a: "You're paid for each completed donation, and the amount depends on the program. Usually, from $3,000 and up to $20,000. Compensation is for your time and commitment, and all medical screening and testing is covered at no cost to you. Your coordinator will explain the exact amount before you sign your donor agreement.",
 };
 const SPERM_HOW: FaqItem = {
   q: "How does this work with you?",
@@ -122,11 +122,11 @@ const SPERM_TESTING: FaqItem = {
 };
 const SPERM_REQ: FaqItem = {
   q: "Can I be a sperm donor?",
-  a: `Quick check: ${sperm.minAge}–${sperm.maxAge} years old, at least ${Math.floor(sperm.minHeightInches / 12)}'${sperm.minHeightInches % 12}" tall, non-smoker, and in college or a graduate.`,
+  a: `Most of our donors are ${sperm.minAge}–${sperm.maxAge}, at least ${Math.floor(sperm.minHeightInches / 12)}'${sperm.minHeightInches % 12}" tall, have a BMI under ${sperm.maxBmi}, don't smoke or vape, and are currently in college or have a college degree. Not sure you qualify? Take our 3-minute pre-screen to find out. Final eligibility is confirmed by our partner clinic.`,
 };
 const SPERM_INTL: FaqItem = {
   q: "I live outside the U.S. Can I apply?",
-  a: "Yes. We work with donors across the U.S. and internationally. If a match involves travel, it's arranged and paid for.",
+  a: "Yes! We work with donors across the U.S. and internationally. If you live outside the U.S., you'll need a valid U.S. visa to donate here. If a match involves travel, we arrange it and cover the cost.",
 };
 const SPERM_LEGAL: FaqItem = {
   q: "Am I on the hook for any kids, legally or financially?",
@@ -137,8 +137,8 @@ const SPERM_ANON: FaqItem = {
   a: "Depends on the family. Some want an anonymous donor, others a known or open-ID arrangement. You'll always know which before you agree, and it goes in your donor agreement.",
 };
 const SPERM_HEIGHT: FaqItem = {
-  q: "Why the height rule?",
-  a: "Height and education guidelines reflect what intended-parent families ask for. They don't change your compensation.",
+  q: "Why are there height and education requirements?",
+  a: "These guidelines reflect what intended parents most often look for when choosing a donor, so they help your profile get matched. They're about matching only, and they don't affect your compensation.",
 };
 
 export const FAQ: Record<FaqGroup, { title: string; items: FaqItem[] }> = {

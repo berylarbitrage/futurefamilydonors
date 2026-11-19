@@ -110,12 +110,14 @@ export default function HomePage() {
               href: "/egg-donor",
               who: "Egg donors",
               amount: SITE.eggComp,
+              details: SITE.eggCompTiers as readonly string[],
               cls: "bg-sun md:-rotate-2",
             },
             {
               href: "/sperm-donor",
               who: "Sperm donors",
               amount: spermComp,
+              details: [SITE.spermCompNote] as readonly string[],
               cls: "bg-mint md:rotate-2",
             },
           ].map((c) => (
@@ -133,6 +135,11 @@ export default function HomePage() {
                 <p className="mt-5 text-3xl leading-[1.05] font-extrabold tracking-tight md:text-[2.5rem]">
                   {c.amount}
                 </p>
+                <ul className="mt-4 space-y-1 text-base font-semibold">
+                  {c.details.map((d) => (
+                    <li key={d}>{d}</li>
+                  ))}
+                </ul>
               </div>
               <p className="mt-8 inline-flex items-center gap-1.5 font-extrabold underline decoration-2 underline-offset-4">
                 Learn more

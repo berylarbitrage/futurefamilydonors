@@ -156,6 +156,7 @@ describe("portal submit", () => {
     db.tables.photos = [
       { application_id: "app-a", kind: "childhood" },
       { application_id: "app-a", kind: "recent" },
+      { application_id: "app-a", kind: "recent" },
     ];
     const res = await call(submit, "POST", { signedName: "Jane Doe", attest: true });
     expect(res.status).toBe(200);
