@@ -5,6 +5,7 @@ import type { ReactElement } from "react";
 import { env } from "@/lib/env";
 import { log } from "@/lib/log";
 import { SITE } from "@/config/site";
+import { normalizeUrl } from "@/lib/url";
 
 let client: Resend | null = null;
 
@@ -34,7 +35,7 @@ export async function sendEmailResult(opts: {
     const { error } = await client.emails.send({
       from,
       to: opts.to,
-      subject: opts.subject,
+      subject: labelSubject(opts.subject),
       html,
       text,
       replyTo: opts.replyTo,
@@ -64,14 +65,36 @@ export async function sendEmail(opts: {
 }
 
 /**
- * "From" header. The display name is always the brand, so every deployment
- * (production or a preview) sends as e.g. "Good Beginnings Club"; only the
- * address is taken from EMAIL_FROM ("hello@x.com" or "Any Name <hello@x.com>").
+ * Label for emails sent by a non-production copy of the site, so they can't be
+ * mistaken for real ones: EMAIL_LABEL if set; otherwise "PREVIEW" when the
+ * site address starts with "preview." (e.g. preview.goodbeginningsclub.com) or
+ * on a Vercel preview deployment; otherwise none.
+ */
+export function emailLabel(): string | null {
+  const explicit = env("EMAIL_LABEL")?.trim();
+  if (explicit) return explicit;
+  if (process.env.VERCEL_ENV === "preview") return "PREVIEW";
+  const site = normalizeUrl(process.env.NEXT_PUBLIC_SITE_URL);
+  if (site && new URL(site).hostname.toLowerCase().startsWith("preview.")) return "PREVIEW";
+  return null;
+}
+
+/** Subject with the label in front, e.g. "[PREVIEW] New egg pre-screen: …". */
+export function labelSubject(subject: string): string {
+  const label = emailLabel();
+  return label ? `[${label}] ${subject}` : subject;
+}
+
+/**
+ * "From" header: the brand (plus the label on a preview copy, e.g.
+ * "Good Beginnings Club PREVIEW") and the address from EMAIL_FROM
+ * ("hello@x.com" or "Any Name <hello@x.com>").
  */
 export function emailFrom(): string {
   const configured = env("EMAIL_FROM")?.trim();
   const address = configured?.match(/<([^>]+)>/)?.[1]?.trim() ?? configured;
-  return `${SITE.brand} <${address || "onboarding@resend.dev"}>`;
+  const label = emailLabel();
+  return `${SITE.brand}${label ? ` ${label}` : ""} <${address || "onboarding@resend.dev"}>`;
 }
 
 /** Domain part of the configured sender, e.g. "futurefamilydonors.com". */
