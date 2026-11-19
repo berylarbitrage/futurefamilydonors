@@ -1,8 +1,12 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ImagePlus, Video, X } from "lucide-react";
 import { PHOTO_LIMITS, VIDEO_LIMITS } from "@/lib/full-app";
+import { compressImage } from "@/lib/compress-image";
+
+/** Photos are shrunk in the browser, so a bigger original is fine to pick. */
+const RAW_PHOTO_MAX_BYTES = 25 * 1024 * 1024;
 
 /**
  * Pick 3–5 photos in the pre-screen. Files stay in the browser until the
@@ -38,24 +42,37 @@ export function PrescreenPhotos({
     onVideoChange(f);
   };
 
-  const add = (list: FileList | null) => {
-    if (!list) return;
+  const [preparing, setPreparing] = useState(false);
+
+  const add = async (list: File[]) => {
+    if (!list.length) return;
     onError(null);
     const next = [...files];
-    for (const f of Array.from(list)) {
-      if (!PHOTO_LIMITS.mimeTypes.includes(f.type as "image/jpeg")) {
-        onError("Please choose JPG or PNG images.");
-        continue;
+    setPreparing(true);
+    try {
+      for (const raw of list) {
+        if (!PHOTO_LIMITS.mimeTypes.includes(raw.type as "image/jpeg")) {
+          onError("Please choose JPG or PNG images.");
+          continue;
+        }
+        if (raw.size > RAW_PHOTO_MAX_BYTES) {
+          onError("That photo is too large. Please choose one under 25 MB.");
+          continue;
+        }
+        if (next.length >= PHOTO_LIMITS.maxCount) {
+          onError(`You can add up to ${PHOTO_LIMITS.maxCount} photos.`);
+          break;
+        }
+        // Shrink big phone photos first so the upload is quick.
+        const f = await compressImage(raw);
+        if (f.size > PHOTO_LIMITS.maxBytes) {
+          onError("Each photo must be 5 MB or smaller.");
+          continue;
+        }
+        next.push(f);
       }
-      if (f.size > PHOTO_LIMITS.maxBytes) {
-        onError("Each photo must be 5 MB or smaller.");
-        continue;
-      }
-      if (next.length >= PHOTO_LIMITS.maxCount) {
-        onError(`You can add up to ${PHOTO_LIMITS.maxCount} photos.`);
-        break;
-      }
-      next.push(f);
+    } finally {
+      setPreparing(false);
     }
     onChange(next);
   };
@@ -66,9 +83,9 @@ export function PrescreenPhotos({
         Your photos <span className="text-destructive">*</span>
       </legend>
       <p id="photos-hint" className="text-muted -mt-1 text-xs">
-        Add {PHOTO_LIMITS.minCount}–{PHOTO_LIMITS.maxCount} clear photos of yourself (JPG or PNG, 5
-        MB max each). They&apos;re stored privately and only shared, without your name, with
-        families considering you as a donor.
+        Add {PHOTO_LIMITS.minCount}–{PHOTO_LIMITS.maxCount} clear photos of yourself (JPG or PNG).
+        They&apos;re stored privately and only shared, without your name, with families considering
+        you as a donor.
       </p>
       <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
         {previews.map((src, i) => (
@@ -101,15 +118,18 @@ export function PrescreenPhotos({
               multiple
               className="sr-only"
               onChange={(e) => {
-                add(e.target.files);
+                const picked = Array.from(e.target.files ?? []);
                 e.target.value = "";
+                void add(picked);
               }}
             />
           </label>
         )}
       </div>
       <p className="text-sm font-semibold">
-        {files.length} of {PHOTO_LIMITS.minCount}–{PHOTO_LIMITS.maxCount} added
+        {preparing
+          ? "Preparing photos…"
+          : `${files.length} of ${PHOTO_LIMITS.minCount}–${PHOTO_LIMITS.maxCount} added`}
       </p>
       <div className="space-y-2 pt-2">
         <p className="text-sm font-bold">Video (optional)</p>

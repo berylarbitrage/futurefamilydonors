@@ -37,7 +37,7 @@ function CopyRow({ label, url }: { label: string; url: string }) {
 }
 
 export function ReferForm() {
-  const [links, setLinks] = useState<{ egg: string; sperm: string } | null>(null);
+  const [links, setLinks] = useState<{ link: string } | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
   const {
     register,
@@ -53,7 +53,7 @@ export function ReferForm() {
       body: JSON.stringify(data),
     });
     const j = (await res.json().catch(() => ({}))) as {
-      links?: { egg: string; sperm: string };
+      links?: { link: string };
       error?: string;
     };
     if (res.ok && j.links) setLinks(j.links);
@@ -66,13 +66,12 @@ export function ReferForm() {
         className="bg-sun border-ink space-y-5 rounded-[16px] border-3 p-6 shadow-[6px_6px_0_0_#111]"
         role="status"
       >
-        <p className="text-lg font-extrabold">Your referral links are ready!</p>
+        <p className="text-lg font-extrabold">Your referral link is ready!</p>
         <p className="text-muted text-sm">
-          Share the link that fits your friend. We&apos;ll remember the referral for 30 days after
-          they click it.
+          Share it with anyone who might want to be an egg or sperm donor — they choose on our site.
+          We&apos;ll remember the referral for 30 days after they click it.
         </p>
-        <CopyRow label="Egg donor link" url={links.egg} />
-        <CopyRow label="Sperm donor link" url={links.sperm} />
+        <CopyRow label="Your referral link" url={links.link} />
       </div>
     );
   }

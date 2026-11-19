@@ -24,6 +24,7 @@ import { NoteForm } from "@/components/admin/note-form";
 import { DeleteApplicantButton } from "@/components/admin/delete-button";
 import { MessageComposer } from "@/components/admin/message-composer";
 import { ReviewActions } from "@/components/admin/review-actions";
+import { PrescreenDecision } from "@/components/admin/prescreen-decision";
 import { MarkRepliesRead } from "@/components/admin/mark-read";
 import { MessageThread } from "@/components/messages/thread";
 import { templateVars } from "@/lib/messages/send";
@@ -141,6 +142,12 @@ export default async function ApplicationDetailPage({
       </div>
 
       {canEdit && app.status === "full_app_submitted" && <ReviewActions id={id} />}
+      {canEdit && !app.eligible && ["new", "contacted"].includes(app.status) && (
+        <PrescreenDecision
+          id={id}
+          reasons={(app.fail_reasons as FailReason[]).map((r) => FAIL_REASON_LABELS[r] ?? r)}
+        />
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
         <div className="space-y-6">

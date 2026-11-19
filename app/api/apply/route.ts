@@ -24,6 +24,7 @@ import { SITE, siteUrl } from "@/config/site";
 import EligibleEmail from "@/emails/eligible";
 import IneligibleEmail from "@/emails/ineligible";
 import AdminNewApplicationEmail from "@/emails/admin-new-application";
+import { prescreenSummary } from "@/lib/admin/prescreen-summary";
 
 const DUPLICATE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
@@ -230,11 +231,8 @@ export async function POST(req: Request) {
     } else {
       await sendEmail({
         to: email,
-        subject: `Thank you for applying to ${SITE.brand}`,
-        react: createElement(IneligibleEmail, {
-          firstName: d.firstName,
-          referUrl: siteUrl("/refer"),
-        }),
+        subject: `We've received your application — ${SITE.brand}`,
+        react: createElement(IneligibleEmail, { firstName: d.firstName }),
       });
     }
     const adminTo = env("ADMIN_NOTIFY_EMAIL");
@@ -247,6 +245,7 @@ export async function POST(req: Request) {
           donorType,
           eligible: result.eligible,
           adminUrl: siteUrl(`/admin/applications/${applicationId}`),
+          details: prescreenSummary(row, { photos: photos.length, video: !!video }),
         }),
       });
     }

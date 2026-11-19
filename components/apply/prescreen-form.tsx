@@ -105,7 +105,7 @@ export function PrescreenForm({
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [video, setVideo] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const [uploading, setUploading] = useState<{ done: number; total: number } | null>(null);
   const restored = useRef(false);
   const stopPersisting = useRef(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -229,7 +229,13 @@ export function PrescreenForm({
     form.setValue("prevDonations", list, { shouldDirty: true });
   const updateDonation = (i: number, patch: Partial<DonationRow>) =>
     setPrevDonations(prevDonations.map((d, j) => (j === i ? { ...d, ...patch } : d)));
-  const todayIso = new Date().toISOString().slice(0, 10);
+  // The applicant's own local date (YYYY-MM-DD): donations can't be after today.
+  const now = new Date();
+  const todayIso = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, "0"),
+    String(now.getDate()).padStart(2, "0"),
+  ].join("-");
 
   const goTo = (s: number) => {
     setStep(s);
@@ -346,13 +352,14 @@ export function PrescreenForm({
     // Upload the photos with the one-time URLs, then record them. A failed
     // upload doesn't lose the application — photos can be added in the portal.
     if (body.applicationId && body.uploads?.length) {
-      setUploading(true);
       const done: string[] = [];
       const bucket = createClient().storage.from("donor-photos");
       const jobs: { path: string; token: string; file: File | undefined }[] = [
         ...body.uploads.map((u, i) => ({ ...u, file: photos[i] })),
         ...(body.videoUpload && video ? [{ ...body.videoUpload, file: video }] : []),
       ];
+      let finished = 0;
+      setUploading({ done: 0, total: jobs.length });
       await Promise.all(
         jobs.map(async ({ file, ...u }) => {
           if (!file) return;
@@ -360,6 +367,7 @@ export function PrescreenForm({
             contentType: file.type,
           });
           if (!error) done.push(u.path);
+          setUploading({ done: ++finished, total: jobs.length });
         }),
       );
       if (done.length) {
@@ -797,11 +805,20 @@ export function PrescreenForm({
                       <div
                         className={`grid flex-1 gap-3 ${type === "egg" ? "grid-cols-[1fr_8rem]" : ""}`}
                       >
-                        <Field id={`prevDonations-${i}`} label={`Donation ${i + 1}`}>
+                        <Field
+                          id={`prevDonations-${i}`}
+                          label={`Donation ${i + 1}`}
+                          error={
+                            row.date && row.date > todayIso
+                              ? "This date is in the future. Please pick a past date."
+                              : undefined
+                          }
+                        >
                           <Input
                             id={`prevDonations-${i}`}
                             type="date"
                             max={todayIso}
+                            aria-invalid={!!row.date && row.date > todayIso}
                             value={row.date}
                             onChange={(e) => updateDonation(i, { date: e.target.value })}
                           />
@@ -1051,7 +1068,7 @@ export function PrescreenForm({
           ) : (
             <Button key="submit" type="submit" size="lg" disabled={isSubmitting}>
               {uploading
-                ? "Uploading photos…"
+                ? `Uploading ${Math.min(uploading.done + 1, uploading.total)} of ${uploading.total}…`
                 : isSubmitting
                   ? "Submitting…"
                   : "Submit Application"}

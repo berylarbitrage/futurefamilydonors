@@ -18,9 +18,10 @@ export function generateRefCode(length = 8): string {
   return Array.from(bytes, (b) => ALPHABET[b % ALPHABET.length]).join("");
 }
 
+/**
+ * One link for everyone: the ?ref code is remembered for 30 days on any page,
+ * and counts whether the friend applies as an egg or a sperm donor.
+ */
 export function referralLinks(code: string, base: string) {
-  return {
-    egg: `${base}/egg-donor?ref=${code}`,
-    sperm: `${base}/sperm-donor?ref=${code}`,
-  };
+  return { link: `${base}/?ref=${code}` };
 }
