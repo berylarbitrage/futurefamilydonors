@@ -29,8 +29,9 @@ export default async function AdminLoginPage({
       icon={ShieldCheck}
       area="Admin"
       title="Admin sign in"
-      intro="Staff only. Enter your work email and we'll send a one-time sign-in link."
+      intro="Staff only. Sign in with your email and password, or get a one-time link by email."
       next={next}
+      allowPassword
       error={sp.error}
       wrongAccount={
         user ? `You're signed in as ${user.email}, which is not a staff account.` : null

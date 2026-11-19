@@ -1,0 +1,71 @@
+"use client";
+
+import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+
+/**
+ * Staff sign-in with the email + password set for the account in Supabase
+ * (Authentication → Users). The emailed one-time link stays as a fallback.
+ */
+export function PasswordLoginForm({ next }: { next: string }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!/^\S+@\S+\.\S+$/.test(email) || !password) {
+      setError("Please enter your email and password.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    const { error: err } = await createClient().auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+    if (err) {
+      setBusy(false);
+      setError(
+        /rate|too many/i.test(err.message)
+          ? "Too many attempts. Please wait a minute and try again."
+          : "Wrong email or password.",
+      );
+      return;
+    }
+    // Back through the sign-in page: staff go on to `next`, anyone else sees
+    // a "not a staff account" note instead of a 404.
+    window.location.assign(`/admin/login?next=${encodeURIComponent(next)}`);
+  };
+
+  return (
+    <form onSubmit={submit} noValidate className="space-y-4">
+      <Field id="pw-email" label="Email" required>
+        <Input
+          id="pw-email"
+          type="email"
+          autoComplete="username"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+      </Field>
+      <Field id="pw-password" label="Password" required error={error ?? undefined}>
+        <Input
+          id="pw-password"
+          type="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          aria-invalid={!!error}
+        />
+      </Field>
+      <Button type="submit" size="lg" className="w-full" disabled={busy}>
+        {busy ? "Signing in…" : "Sign In"}
+      </Button>
+    </form>
+  );
+}
