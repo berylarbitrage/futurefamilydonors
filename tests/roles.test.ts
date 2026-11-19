@@ -44,7 +44,7 @@ describe("where people land after sign-in", () => {
   });
   it("a requested page is kept only if the role may open it", () => {
     expect(landingFor("admin", "/admin/applications/x")).toBe("/admin/applications/x");
-    expect(landingFor("admin", "/portal")).toBe("/admin");
+    expect(landingFor("admin", "/portal")).toBe("/portal"); // staff can also be donors
     expect(landingFor("partner", "/admin")).toBe("/catalog");
     expect(landingFor("applicant", "/catalog")).toBe("/portal");
     expect(landingFor("applicant", "/portal/application")).toBe("/portal/application");

@@ -99,11 +99,14 @@ export function loginForPath(path: string): string {
   return "/portal/login";
 }
 
-/** May this role open this path? Unknown/public paths are allowed. */
+/**
+ * May this role open this path? Unknown/public paths are allowed. The donor
+ * portal is open to every signed-in account: one email can be both staff and
+ * a donor, and the portal only ever shows that person's own application.
+ */
 export function allowedPath(role: Role, path: string): boolean {
   if (path.startsWith("/admin")) return isStaff(role);
   if (path.startsWith("/catalog")) return can(role, "view_catalog");
-  if (path.startsWith("/portal")) return role === "applicant";
   return true;
 }
 
