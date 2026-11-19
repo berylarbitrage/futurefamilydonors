@@ -5,7 +5,7 @@ import type { ReactElement } from "react";
 import { env } from "@/lib/env";
 import { log } from "@/lib/log";
 import { SITE } from "@/config/site";
-import { normalizeUrl } from "@/lib/url";
+import { emailLabel } from "@/lib/email-label";
 
 let client: Resend | null = null;
 
@@ -39,6 +39,9 @@ export async function sendEmailResult(opts: {
       html,
       text,
       replyTo: opts.replyTo,
+      // A unique id per email stops Gmail from stacking emails that share a
+      // subject (e.g. several pre-screens from the same person) into one thread.
+      headers: { "X-Entity-Ref-ID": crypto.randomUUID() },
     });
     if (error) {
       log.error("resend send failed", error, { subjectLine: opts.subject, from });
@@ -64,20 +67,7 @@ export async function sendEmail(opts: {
   return (await sendEmailResult(opts)).ok;
 }
 
-/**
- * Label for emails sent by a non-production copy of the site, so they can't be
- * mistaken for real ones: EMAIL_LABEL if set; otherwise "PREVIEW" when the
- * site address starts with "preview." (e.g. preview.goodbeginningsclub.com) or
- * on a Vercel preview deployment; otherwise none.
- */
-export function emailLabel(): string | null {
-  const explicit = env("EMAIL_LABEL")?.trim();
-  if (explicit) return explicit;
-  if (process.env.VERCEL_ENV === "preview") return "PREVIEW";
-  const site = normalizeUrl(process.env.NEXT_PUBLIC_SITE_URL);
-  if (site && new URL(site).hostname.toLowerCase().startsWith("preview.")) return "PREVIEW";
-  return null;
-}
+export { emailLabel };
 
 /** Subject with the label in front, e.g. "[PREVIEW] New egg pre-screen: …". */
 export function labelSubject(subject: string): string {

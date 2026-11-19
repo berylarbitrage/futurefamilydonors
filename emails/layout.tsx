@@ -1,7 +1,9 @@
 import { Body, Container, Head, Hr, Html, Preview, Section, Text } from "@react-email/components";
 import { DISCLAIMER, SITE } from "@/config/site";
+import { emailLabel } from "@/lib/email-label";
 
 export function EmailLayout({ preview, children }: { preview: string; children: React.ReactNode }) {
+  const label = emailLabel();
   return (
     <Html lang="en">
       <Head />
@@ -14,6 +16,22 @@ export function EmailLayout({ preview, children }: { preview: string; children: 
         }}
       >
         <Container style={{ maxWidth: 560, margin: "0 auto", padding: "32px 24px" }}>
+          {label && (
+            <Text
+              style={{
+                margin: "0 0 16px",
+                padding: "8px 12px",
+                background: "#fff3cd",
+                border: "1px solid #e0b100",
+                borderRadius: 8,
+                color: "#6b4e00",
+                fontSize: 13,
+                fontWeight: 700,
+              }}
+            >
+              {label} — sent by the preview site, not the live site.
+            </Text>
+          )}
           <Text
             style={{
               fontSize: 22,
