@@ -62,7 +62,8 @@ export async function POST(req: Request) {
     const { count } = await supabase
       .from("photos")
       .select("id", { count: "exact", head: true })
-      .eq("application_id", app.id);
+      .eq("application_id", app.id)
+      .neq("kind", "video");
     if ((count ?? 0) >= PHOTO_LIMITS.maxCount) {
       return errorJson(`You can upload up to ${PHOTO_LIMITS.maxCount} photos.`, 400);
     }
@@ -96,7 +97,8 @@ export async function POST(req: Request) {
     const { count } = await supabase
       .from("photos")
       .select("id", { count: "exact", head: true })
-      .eq("application_id", app.id);
+      .eq("application_id", app.id)
+      .neq("kind", "video");
     if ((count ?? 0) >= PHOTO_LIMITS.maxCount) {
       await service.storage.from(PHOTO_BUCKET).remove([b.path]);
       return errorJson(`You can upload up to ${PHOTO_LIMITS.maxCount} photos.`, 400);

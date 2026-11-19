@@ -14,6 +14,7 @@ import { MIN_APPLICANT_AGE } from "@/config/eligibility";
 import { verifyTurnstile } from "@/lib/turnstile";
 import { clientIp } from "@/lib/rate-limit";
 import { createAdminClient, PHOTO_BUCKET } from "@/lib/supabase/admin";
+import { mediaExt } from "@/lib/full-app";
 import { isSupabaseConfigured, env } from "@/lib/env";
 import { REF_CODE_RE, REF_COOKIE } from "@/lib/referral";
 import { createMagicLink, ensureUserDetailed, signInNewApplicant } from "@/lib/auth-links";
@@ -54,7 +55,7 @@ export async function POST(req: Request) {
 
   const body = await parseBody(req, applyRequestSchema);
   if (!body.ok) return body.res;
-  const { donorType, data: raw, turnstileToken, website, photos } = body.data;
+  const { donorType, data: raw, turnstileToken, website, photos, video } = body.data;
 
   // Honeypot: pretend success, store nothing.
   if (website) return json({ ok: true, eligible: false });
@@ -123,13 +124,21 @@ export async function POST(req: Request) {
   const yes = (v: string | undefined) => (v === undefined ? null : v === "yes");
   const isEgg = donorType === "egg";
   const us = isUnitedStates(d.country);
-  const schools = [d.school, ...(d.otherSchools ?? [])].map((s) => s.trim()).filter(Boolean);
+  const schools = [
+    { name: d.school.trim(), level: d.schoolLevel },
+    ...(d.otherSchools ?? [])
+      .map((s) => ({ name: s.name.trim(), level: s.level }))
+      .filter((s) => s.name),
+  ];
   const prescreenDetails: Record<string, unknown> = { schools };
+  if (d.occupation?.trim()) prescreenDetails.occupation = d.occupation.trim();
+  if (d.aboutMe?.trim()) prescreenDetails.aboutMe = d.aboutMe.trim();
   if (d.previousDonation === "yes") {
     prescreenDetails.previousDonation = {
-      count: d.prevDonationDates?.length ?? 0,
-      dates: [...(d.prevDonationDates ?? [])].sort(),
-      ...(isEgg ? { eggsRetrieved: d.prevEggsRetrieved || null } : {}),
+      count: d.prevDonations?.length ?? 0,
+      donations: [...(d.prevDonations ?? [])]
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .map((r) => (isEgg ? { date: r.date, eggsRetrieved: r.eggs || null } : { date: r.date })),
       pregnancyKnown: d.prevPregnancyKnown ?? null,
       agencyOrClinic: d.prevAgency || null,
     };
@@ -246,19 +255,22 @@ export async function POST(req: Request) {
   // One-time signed upload URLs for the pre-screen photos. The browser uploads
   // straight to the private bucket, then confirms via /api/apply/photos.
   const uploads: { path: string; token: string }[] = [];
+  let videoUpload: { path: string; token: string } | null = null;
   try {
     const bucket = db.storage.from(PHOTO_BUCKET);
-    for (const p of photos) {
-      const ext = p.contentType === "image/png" ? "png" : "jpg";
+    const sign = async (contentType: string) => {
       const { data, error } = await bucket.createSignedUploadUrl(
-        `${applicationId}/${crypto.randomUUID()}.${ext}`,
+        `${applicationId}/${crypto.randomUUID()}.${mediaExt(contentType)}`,
       );
       if (error || !data) throw error ?? new Error("no signed url");
-      uploads.push({ path: data.path, token: data.token });
-    }
+      return { path: data.path, token: data.token };
+    };
+    for (const p of photos) uploads.push(await sign(p.contentType));
+    if (video) videoUpload = await sign(video.contentType);
   } catch (err) {
     log.error("apply: photo upload urls failed", err, { applicationId });
     uploads.length = 0;
+    videoUpload = null;
   }
 
   // Clear the referral cookie once it has been attributed.
@@ -267,6 +279,7 @@ export async function POST(req: Request) {
     eligible: result.eligible,
     applicationId,
     uploads,
+    ...(videoUpload ? { videoUpload } : {}),
     ...(continueUrl ? { continueUrl } : {}),
   });
   if (referralCode) res.cookies.delete(REF_COOKIE);

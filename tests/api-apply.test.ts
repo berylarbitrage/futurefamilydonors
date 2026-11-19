@@ -62,6 +62,7 @@ function eggData(over: Record<string, unknown> = {}) {
     zip: "60601",
     education: "Bachelor's",
     school: "University of Illinois",
+    schoolLevel: "Bachelor's degree",
     howHeard: "Google",
     heightFt: 5,
     heightIn: 6,
@@ -108,12 +109,22 @@ describe("POST /api/apply", () => {
     const res = await POST(
       req({
         donorType: "egg",
-        data: eggData({ otherSchools: ["Harvard University", "  ", "MIT"] }),
+        data: eggData({
+          otherSchools: [
+            { name: "Harvard University", level: "Master's degree" },
+            { name: "  ", level: "" },
+            { name: "MIT", level: "Doctorate (PhD)" },
+          ],
+        }),
       }),
     );
     expect(res.status).toBe(200);
     expect(apps()[0]!.prescreen_details).toEqual({
-      schools: ["University of Illinois", "Harvard University", "MIT"],
+      schools: [
+        { name: "University of Illinois", level: "Bachelor's degree" },
+        { name: "Harvard University", level: "Master's degree" },
+        { name: "MIT", level: "Doctorate (PhD)" },
+      ],
     });
   });
 
@@ -136,6 +147,46 @@ describe("POST /api/apply", () => {
       expect(u.path).toMatch(new RegExp(`^${body.applicationId}/[0-9a-f-]{36}\\.jpg$`));
       expect(u.token).toBeTruthy();
     }
+  });
+
+  it("requires a level for the first school and for each extra school with a name", async () => {
+    for (const [over, path] of [
+      [{ schoolLevel: "" }, "schoolLevel"],
+      [{ otherSchools: [{ name: "Harvard University", level: "" }] }, "otherSchools"],
+    ] as const) {
+      const res = await POST(req({ donorType: "egg", data: eggData(over) }));
+      expect(res.status).toBe(400);
+      const paths = (await res.json()).issues.map((i: { path: string }) => i.path);
+      expect(paths).toEqual([path]);
+    }
+    expect(apps()).toHaveLength(0);
+  });
+
+  it("signs an extra upload url for an optional video and stores the about-me answers", async () => {
+    const res = await POST(
+      req({
+        donorType: "egg",
+        data: eggData({ occupation: " Nursing student ", aboutMe: "I love hiking." }),
+        video: { contentType: "video/quicktime", size: 20_000_000 },
+      }),
+    );
+    const body = (await res.json()) as { videoUpload?: { path: string } };
+    expect(body.videoUpload?.path).toMatch(/\.mov$/);
+    expect(apps()[0]!.prescreen_details).toMatchObject({
+      occupation: "Nursing student",
+      aboutMe: "I love hiking.",
+    });
+  });
+
+  it("rejects videos over 50 MB or of the wrong type", async () => {
+    for (const video of [
+      { contentType: "video/mp4", size: 60 * 1024 * 1024 },
+      { contentType: "application/pdf", size: 1000 },
+    ]) {
+      const res = await POST(req({ donorType: "egg", data: eggData(), video }));
+      expect(res.status).toBe(400);
+    }
+    expect(apps()).toHaveLength(0);
   });
 
   it("stores an eligible application and sends eligible + admin emails", async () => {
@@ -221,20 +272,17 @@ describe("POST /api/apply", () => {
     );
     expect(missing.status).toBe(400);
     const paths = (await missing.json()).issues.map((i: { path: string }) => i.path).sort();
-    expect(paths).toEqual([
-      "prevAgency",
-      "prevDonationDates",
-      "prevEggsRetrieved",
-      "prevPregnancyKnown",
-    ]);
+    expect(paths).toEqual(["prevAgency", "prevDonations", "prevPregnancyKnown"]);
     const ok = await POST(
       req({
         donorType: "egg",
         data: eggData({
           email: "jo@example.com",
           previousDonation: "yes",
-          prevDonationDates: ["2024-03-15", "2022-06-01"],
-          prevEggsRetrieved: "about 15 each",
+          prevDonations: [
+            { date: "2024-03-15", eggs: "18" },
+            { date: "2022-06-01", eggs: "about 12" },
+          ],
           prevPregnancyKnown: "unknown",
           prevAgency: "Sample Fertility Clinic",
         }),
@@ -242,11 +290,13 @@ describe("POST /api/apply", () => {
     );
     expect(ok.status).toBe(200);
     expect(apps()[0]!.prescreen_details).toEqual({
-      schools: ["University of Illinois"],
+      schools: [{ name: "University of Illinois", level: "Bachelor's degree" }],
       previousDonation: {
         count: 2,
-        dates: ["2022-06-01", "2024-03-15"],
-        eggsRetrieved: "about 15 each",
+        donations: [
+          { date: "2022-06-01", eggsRetrieved: "about 12" },
+          { date: "2024-03-15", eggsRetrieved: "18" },
+        ],
         pregnancyKnown: "unknown",
         agencyOrClinic: "Sample Fertility Clinic",
       },
@@ -361,7 +411,7 @@ describe("POST /api/apply", () => {
           data: eggData({
             email: "x@example.com",
             previousDonation: "yes",
-            prevDonationDates: dates,
+            prevDonations: dates.map((date) => ({ date })),
             prevPregnancyKnown: "no",
             prevAgency: "Clinic",
           }),
@@ -369,7 +419,7 @@ describe("POST /api/apply", () => {
       );
       expect(res.status).toBe(400);
       const issues = (await res.json()).issues as { path: string; message: string }[];
-      expect(issues.find((i) => i.path === "prevDonationDates")?.message).toBe(msg);
+      expect(issues.find((i) => i.path === "prevDonations")?.message).toBe(msg);
     }
   });
 

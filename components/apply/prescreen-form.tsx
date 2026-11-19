@@ -18,7 +18,12 @@ import {
   type eggApplicationSchema,
   type spermApplicationSchema,
 } from "@/lib/schemas/apply";
-import { EDUCATION_LEVELS, MIN_APPLICANT_AGE, type DonorType } from "@/config/eligibility";
+import {
+  EDUCATION_LEVELS,
+  MIN_APPLICANT_AGE,
+  SCHOOL_LEVELS,
+  type DonorType,
+} from "@/config/eligibility";
 import { US_STATES } from "@/config/us-states";
 import { COUNTRIES, DEFAULT_COUNTRY, isUnitedStates } from "@/config/countries";
 import { SITE } from "@/config/site";
@@ -27,6 +32,7 @@ import { readRefCookie } from "@/lib/referral";
 import { trackLead } from "@/lib/analytics";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { NativeSelect } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { YesNo } from "@/components/forms/yes-no";
@@ -55,7 +61,10 @@ function stepFields(type: DonorType): FieldName[][] {
       "postalCode",
       "education",
       "school",
+      "schoolLevel",
       "otherSchools",
+      "occupation",
+      "aboutMe",
       "howHeard",
     ],
     [
@@ -65,18 +74,13 @@ function stepFields(type: DonorType): FieldName[][] {
       "smoker",
       ...(type === "egg" ? (["regularCycles", "birthControl"] as FieldName[]) : []),
       "previousDonation",
-      ...PREV_DONATION_FIELDS.filter((f) => type === "egg" || f !== "prevEggsRetrieved"),
+      ...PREV_DONATION_FIELDS,
     ],
     ["firstName", "lastName", "email", "phone", "smsConsent", "privacyConsent"],
   ];
 }
 
-const PREV_DONATION_FIELDS: FieldName[] = [
-  "prevDonationDates",
-  "prevEggsRetrieved",
-  "prevPregnancyKnown",
-  "prevAgency",
-];
+const PREV_DONATION_FIELDS: FieldName[] = ["prevDonations", "prevPregnancyKnown", "prevAgency"];
 
 const toNumber = (v: unknown) =>
   v === "" || v === null || v === undefined ? undefined : Number(v);
@@ -100,6 +104,7 @@ export function PrescreenForm({
   // Photos stay in memory (not in the saved draft) until submit.
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoError, setPhotoError] = useState<string | null>(null);
+  const [video, setVideo] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const restored = useRef(false);
   const stopPersisting = useRef(false);
@@ -204,15 +209,26 @@ export function PrescreenForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch, step, storageKey, type]);
 
-  const otherSchools = (watch("otherSchools") ?? []) as string[];
-  const setOtherSchools = (list: string[]) =>
-    form.setValue("otherSchools", list, { shouldDirty: true });
+  type SchoolRow = { name: string; level: string };
+  // Older saved drafts stored plain names; treat those as rows without a level.
+  const otherSchools = ((watch("otherSchools") ?? []) as (SchoolRow | string)[]).map((s) =>
+    typeof s === "string" ? { name: s, level: "" } : s,
+  );
+  const setOtherSchools = (list: SchoolRow[]) =>
+    form.setValue("otherSchools", list as FormValues["otherSchools"], { shouldDirty: true });
+  const updateSchool = (i: number, patch: Partial<SchoolRow>) =>
+    setOtherSchools(otherSchools.map((o, j) => (j === i ? { ...o, ...patch } : o)));
 
-  // Previous donations: one calendar date per donation; start with one empty row.
-  const savedDates = watch("prevDonationDates") as string[] | undefined;
-  const prevDonationDates = savedDates?.length ? savedDates : [""];
-  const setPrevDonationDates = (list: string[]) =>
-    form.setValue("prevDonationDates", list, { shouldDirty: true });
+  // Previous donations: one row (date + eggs retrieved) per donation; start with one empty row.
+  type DonationRow = { date: string; eggs?: string };
+  const savedDonations = watch("prevDonations") as DonationRow[] | undefined;
+  const prevDonations: DonationRow[] = savedDonations?.length
+    ? savedDonations
+    : [{ date: "", eggs: "" }];
+  const setPrevDonations = (list: DonationRow[]) =>
+    form.setValue("prevDonations", list, { shouldDirty: true });
+  const updateDonation = (i: number, patch: Partial<DonationRow>) =>
+    setPrevDonations(prevDonations.map((d, j) => (j === i ? { ...d, ...patch } : d)));
   const todayIso = new Date().toISOString().slice(0, 10);
 
   const goTo = (s: number) => {
@@ -282,6 +298,7 @@ export function PrescreenForm({
           turnstileToken: token,
           website: honeypot,
           photos: photos.map((f) => ({ contentType: f.type, size: f.size })),
+          ...(video ? { video: { contentType: video.type, size: video.size } } : {}),
         }),
       });
     } catch {
@@ -296,6 +313,7 @@ export function PrescreenForm({
       continueUrl?: string;
       applicationId?: string;
       uploads?: { path: string; token: string }[];
+      videoUpload?: { path: string; token: string };
       error?: string;
       code?: string;
       ref?: string;
@@ -331,9 +349,12 @@ export function PrescreenForm({
       setUploading(true);
       const done: string[] = [];
       const bucket = createClient().storage.from("donor-photos");
+      const jobs: { path: string; token: string; file: File | undefined }[] = [
+        ...body.uploads.map((u, i) => ({ ...u, file: photos[i] })),
+        ...(body.videoUpload && video ? [{ ...body.videoUpload, file: video }] : []),
+      ];
       await Promise.all(
-        body.uploads.map(async (u, i) => {
-          const file = photos[i];
+        jobs.map(async ({ file, ...u }) => {
           if (!file) return;
           const { error } = await bucket.uploadToSignedUrl(u.path, u.token, file, {
             contentType: file.type,
@@ -524,34 +545,66 @@ export function PrescreenForm({
                 ))}
               </NativeSelect>
             </Field>
-            <Field
-              id="school"
-              label="School name"
-              hint="Search and pick your college or university. Not listed? Just type the full name. Attended more than one? Add them below."
-              required
-              error={err("school")}
-            >
-              <SchoolCombobox
-                id="school"
-                value={(watch("school") as string | undefined) ?? ""}
-                onChange={(v) => form.setValue("school", v, { shouldDirty: true })}
-                invalid={!!e.school}
-                describedBy={e.school ? "school-error" : undefined}
-              />
-            </Field>
-            {otherSchools.map((value, i) => (
-              <div key={i} className="flex items-end gap-2">
-                <Field
-                  id={`otherSchools-${i}`}
-                  label={`Another school (${i + 2})`}
-                  className="flex-1"
+            <div className="grid gap-3 sm:grid-cols-[1fr_13rem]">
+              <Field id="school" label="School name" required error={err("school")}>
+                <SchoolCombobox
+                  id="school"
+                  value={(watch("school") as string | undefined) ?? ""}
+                  onChange={(v) => form.setValue("school", v, { shouldDirty: true })}
+                  invalid={!!e.school}
+                  describedBy={e.school ? "school-error" : undefined}
+                />
+              </Field>
+              <Field id="schoolLevel" label="Level" required error={err("schoolLevel")}>
+                <NativeSelect
+                  id="schoolLevel"
+                  defaultValue=""
+                  {...inv("schoolLevel")}
+                  {...register("schoolLevel")}
                 >
-                  <SchoolCombobox
-                    id={`otherSchools-${i}`}
-                    value={value}
-                    onChange={(v) => setOtherSchools(otherSchools.map((o, j) => (j === i ? v : o)))}
-                  />
-                </Field>
+                  <option value="" disabled>
+                    Select one
+                  </option>
+                  {SCHOOL_LEVELS.map((l) => (
+                    <option key={l} value={l}>
+                      {l}
+                    </option>
+                  ))}
+                </NativeSelect>
+              </Field>
+            </div>
+            <p className="text-muted -mt-3 text-xs">
+              Search and pick your college or university. Not listed? Just type the full name.
+              Attended more than one? Add them below.
+            </p>
+            {otherSchools.map((row, i) => (
+              <div key={i} className="flex items-end gap-2">
+                <div className="grid flex-1 gap-3 sm:grid-cols-[1fr_13rem]">
+                  <Field id={`otherSchools-${i}`} label={`Another school (${i + 2})`}>
+                    <SchoolCombobox
+                      id={`otherSchools-${i}`}
+                      value={row.name}
+                      onChange={(v) => updateSchool(i, { name: v })}
+                    />
+                  </Field>
+                  <Field id={`otherSchoolsLevel-${i}`} label="Level">
+                    <NativeSelect
+                      id={`otherSchoolsLevel-${i}`}
+                      value={row.level}
+                      aria-invalid={!!e.otherSchools && !!row.name.trim() && !row.level}
+                      onChange={(ev) => updateSchool(i, { level: ev.target.value })}
+                    >
+                      <option value="" disabled>
+                        Select one
+                      </option>
+                      {SCHOOL_LEVELS.map((l) => (
+                        <option key={l} value={l}>
+                          {l}
+                        </option>
+                      ))}
+                    </NativeSelect>
+                  </Field>
+                </div>
                 <Button
                   type="button"
                   variant="ghost"
@@ -563,16 +616,48 @@ export function PrescreenForm({
                 </Button>
               </div>
             ))}
+            {err("otherSchools") && (
+              <p id="otherSchools-error" role="alert" className="text-destructive text-sm">
+                {err("otherSchools")}
+              </p>
+            )}
             {otherSchools.length < MAX_OTHER_SCHOOLS && (
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => setOtherSchools([...otherSchools, ""])}
+                onClick={() => setOtherSchools([...otherSchools, { name: "", level: "" }])}
               >
                 <Plus aria-hidden /> Add another school
               </Button>
             )}
+            <Field
+              id="occupation"
+              label="What do you do? (optional)"
+              hint="Your job, studies or what you're working toward — e.g. 'Nursing student' or 'Software engineer'."
+              error={err("occupation")}
+            >
+              <Input
+                id="occupation"
+                maxLength={120}
+                {...inv("occupation")}
+                {...register("occupation")}
+              />
+            </Field>
+            <Field
+              id="aboutMe"
+              label="Tell us about yourself (optional)"
+              hint="Your work, interests, talents, what matters to you — anything you'd like families to know."
+              error={err("aboutMe")}
+            >
+              <Textarea
+                id="aboutMe"
+                rows={4}
+                maxLength={1500}
+                {...inv("aboutMe")}
+                {...register("aboutMe")}
+              />
+            </Field>
             <Field id="howHeard" label="How did you hear about us?" error={err("howHeard")}>
               <NativeSelect id="howHeard" {...register("howHeard")}>
                 <option value="">Prefer not to say</option>
@@ -695,87 +780,75 @@ export function PrescreenForm({
             {donatedBefore && (
               <div className="border-ink bg-sun-soft space-y-5 rounded-[12px] border-3 border-dashed p-4">
                 <p className="text-sm font-bold">Tell us about your previous donations</p>
-                <fieldset className="space-y-3" aria-describedby="prevDonationDates-hint">
+                <fieldset className="space-y-3" aria-describedby="prevDonations-hint">
                   <legend className="text-sm font-bold">
-                    When was each donation? <span className="text-destructive">*</span>
+                    {type === "egg"
+                      ? "When was each donation, and about how many eggs were retrieved?"
+                      : "When was each donation?"}{" "}
+                    <span className="text-destructive">*</span>
                   </legend>
-                  <p id="prevDonationDates-hint" className="text-muted -mt-1 text-xs">
+                  <p id="prevDonations-hint" className="text-muted -mt-1 text-xs">
                     Add one row per donation and pick the date from the calendar. If you don&apos;t
                     remember the exact day, pick a date close to it.
+                    {type === "egg" && " For eggs, an estimate is fine, or write 'Not sure'."}
                   </p>
-                  {prevDonationDates.map((value, i) => (
+                  {prevDonations.map((row, i) => (
                     <div key={i} className="flex items-end gap-2">
-                      <Field
-                        id={`prevDonationDates-${i}`}
-                        label={`Donation ${i + 1}`}
-                        className="flex-1"
+                      <div
+                        className={`grid flex-1 gap-3 ${type === "egg" ? "grid-cols-[1fr_8rem]" : ""}`}
                       >
-                        <Input
-                          id={`prevDonationDates-${i}`}
-                          type="date"
-                          max={todayIso}
-                          value={value}
-                          onChange={(e) =>
-                            setPrevDonationDates(
-                              prevDonationDates.map((v, j) => (j === i ? e.target.value : v)),
-                            )
-                          }
-                        />
-                      </Field>
-                      {prevDonationDates.length > 1 && (
+                        <Field id={`prevDonations-${i}`} label={`Donation ${i + 1}`}>
+                          <Input
+                            id={`prevDonations-${i}`}
+                            type="date"
+                            max={todayIso}
+                            value={row.date}
+                            onChange={(e) => updateDonation(i, { date: e.target.value })}
+                          />
+                        </Field>
+                        {type === "egg" && (
+                          <Field id={`prevDonationsEggs-${i}`} label="Eggs retrieved">
+                            <Input
+                              id={`prevDonationsEggs-${i}`}
+                              inputMode="numeric"
+                              maxLength={40}
+                              placeholder="e.g. 15"
+                              value={row.eggs ?? ""}
+                              onChange={(e) => updateDonation(i, { eggs: e.target.value })}
+                            />
+                          </Field>
+                        )}
+                      </div>
+                      {prevDonations.length > 1 && (
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
                           aria-label={`Remove donation ${i + 1}`}
-                          onClick={() =>
-                            setPrevDonationDates(prevDonationDates.filter((_, j) => j !== i))
-                          }
+                          onClick={() => setPrevDonations(prevDonations.filter((_, j) => j !== i))}
                         >
                           <X aria-hidden />
                         </Button>
                       )}
                     </div>
                   ))}
-                  {prevDonationDates.length < MAX_PREV_DONATIONS && (
+                  {prevDonations.length < MAX_PREV_DONATIONS && (
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => setPrevDonationDates([...prevDonationDates, ""])}
+                      onClick={() => setPrevDonations([...prevDonations, { date: "", eggs: "" }])}
                     >
                       <Plus aria-hidden /> Add another donation
                     </Button>
                   )}
-                  <p className="text-sm font-semibold">
-                    Total donations: {prevDonationDates.length}
-                  </p>
-                  {err("prevDonationDates") && (
-                    <p
-                      id="prevDonationDates-error"
-                      role="alert"
-                      className="text-destructive text-sm"
-                    >
-                      {err("prevDonationDates")}
+                  <p className="text-sm font-semibold">Total donations: {prevDonations.length}</p>
+                  {err("prevDonations") && (
+                    <p id="prevDonations-error" role="alert" className="text-destructive text-sm">
+                      {err("prevDonations")}
                     </p>
                   )}
                 </fieldset>
-                {type === "egg" && (
-                  <Field
-                    id="prevEggsRetrieved"
-                    label="About how many eggs were retrieved each time?"
-                    hint="An estimate is fine, or write 'Not sure'"
-                    required
-                    error={err("prevEggsRetrieved")}
-                  >
-                    <Input
-                      id="prevEggsRetrieved"
-                      maxLength={300}
-                      {...inv("prevEggsRetrieved")}
-                      {...register("prevEggsRetrieved")}
-                    />
-                  </Field>
-                )}
                 <fieldset
                   className="space-y-2"
                   aria-describedby={
@@ -841,6 +914,8 @@ export function PrescreenForm({
             <PrescreenPhotos
               files={photos}
               onChange={setPhotos}
+              video={video}
+              onVideoChange={setVideo}
               error={photoError}
               onError={setPhotoError}
             />

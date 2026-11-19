@@ -27,6 +27,7 @@ export default async function FullApplicationPage({
     .from("photos")
     .select("id,kind,storage_path")
     .eq("application_id", app.id)
+    .neq("kind", "video") // the pre-screen video is shown to staff only, not in the photo grid
     .order("created_at");
   const urls = new Map<string, string>();
   if (photoRows?.length) {

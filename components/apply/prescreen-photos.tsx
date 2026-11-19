@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import { ImagePlus, X } from "lucide-react";
-import { PHOTO_LIMITS } from "@/lib/full-app";
+import { ImagePlus, Video, X } from "lucide-react";
+import { PHOTO_LIMITS, VIDEO_LIMITS } from "@/lib/full-app";
 
 /**
  * Pick 3–5 photos in the pre-screen. Files stay in the browser until the
@@ -13,14 +13,30 @@ export function PrescreenPhotos({
   onChange,
   error,
   onError,
+  video,
+  onVideoChange,
 }: {
   files: File[];
   onChange: (files: File[]) => void;
+  video: File | null;
+  onVideoChange: (file: File | null) => void;
   error?: string | null;
   onError: (message: string | null) => void;
 }) {
   const previews = useMemo(() => files.map((f) => URL.createObjectURL(f)), [files]);
   useEffect(() => () => previews.forEach((u) => URL.revokeObjectURL(u)), [previews]);
+
+  const videoUrl = useMemo(() => (video ? URL.createObjectURL(video) : null), [video]);
+  useEffect(() => () => void (videoUrl && URL.revokeObjectURL(videoUrl)), [videoUrl]);
+
+  const pickVideo = (f: File | undefined) => {
+    if (!f) return;
+    onError(null);
+    if (!VIDEO_LIMITS.mimeTypes.includes(f.type as "video/mp4"))
+      return onError("Please choose an MP4, MOV or WebM video.");
+    if (f.size > VIDEO_LIMITS.maxBytes) return onError("The video must be 50 MB or smaller.");
+    onVideoChange(f);
+  };
 
   const add = (list: FileList | null) => {
     if (!list) return;
@@ -95,6 +111,45 @@ export function PrescreenPhotos({
       <p className="text-sm font-semibold">
         {files.length} of {PHOTO_LIMITS.minCount}–{PHOTO_LIMITS.maxCount} added
       </p>
+      <div className="space-y-2 pt-2">
+        <p className="text-sm font-bold">Video (optional)</p>
+        <p className="text-muted -mt-1 text-xs">
+          A short clip saying hello and telling us a bit about yourself (MP4, MOV or WebM, up to 50
+          MB — about 30–60 seconds).
+        </p>
+        {video && videoUrl ? (
+          <div className="flex items-start gap-3">
+            <video
+              src={videoUrl}
+              controls
+              preload="metadata"
+              className="border-ink aspect-video w-56 rounded-lg border-2 bg-black object-contain"
+            />
+            <button
+              type="button"
+              aria-label="Remove video"
+              className="border-ink rounded-full border-2 bg-white p-0.5"
+              onClick={() => onVideoChange(null)}
+            >
+              <X className="size-4" aria-hidden />
+            </button>
+          </div>
+        ) : (
+          <label className="border-ink hover:bg-sun-soft inline-flex cursor-pointer items-center gap-2 rounded-lg border-2 border-dashed px-4 py-3 text-sm font-bold">
+            <Video className="size-5" aria-hidden />
+            Add a video
+            <input
+              type="file"
+              accept="video/mp4,video/quicktime,video/webm"
+              className="sr-only"
+              onChange={(e) => {
+                pickVideo(e.target.files?.[0]);
+                e.target.value = "";
+              }}
+            />
+          </label>
+        )}
+      </div>
       {error && (
         <p id="photos-error" role="alert" className="text-destructive text-sm">
           {error}
