@@ -1,31 +1,30 @@
-import { Button, Heading, Text } from "@react-email/components";
-import { EmailLayout, button } from "./layout";
+import { Heading, Text } from "@react-email/components";
+import { EmailLayout } from "./layout";
 import { SITE } from "@/config/site";
 
+/**
+ * Confirmation for a pre-screen that didn't meet the automatic guidelines.
+ * Nobody is turned down automatically: the team reviews it and decides.
+ */
 export default function IneligibleEmail({
   firstName = "there",
-  referUrl = "https://example.com/refer",
 }: {
   firstName?: string;
   referUrl?: string;
 }) {
   return (
-    <EmailLayout preview="Thank you for your interest">
+    <EmailLayout preview="We've received your application">
       <Heading as="h1" style={{ fontSize: 24 }}>
         Thank you, {firstName}
       </Heading>
       <Text>
-        We truly appreciate your interest in becoming a donor. Based on the current requirements of
-        our partner programs, we&apos;re not able to move forward with your application at this
-        time. Requirements are set by medical providers and are not a reflection of you as a person.
+        We&apos;ve received your application to become a donor with {SITE.brand}. Our team will
+        review your answers personally and get back to you by email.
       </Text>
       <Text>
-        You can still help! Refer a friend who might be a great fit, and earn {SITE.referralBonus}
-        when they complete a donation.
+        There&apos;s nothing else you need to do right now. If you have any questions in the
+        meantime, just reply to this email.
       </Text>
-      <Button href={referUrl} style={button}>
-        Get My Referral Link
-      </Button>
     </EmailLayout>
   );
 }

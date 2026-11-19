@@ -8,6 +8,7 @@ import { Resend } from "resend";
 import { render } from "@react-email/components";
 import EligibleEmail from "../emails/eligible";
 import IneligibleEmail from "../emails/ineligible";
+import DeclinedEmail from "../emails/declined";
 import AdminNewApplicationEmail from "../emails/admin-new-application";
 
 const to = process.argv[2];
@@ -21,7 +22,8 @@ const from = process.env.EMAIL_FROM || "Test <onboarding@resend.dev>";
 
 const templates = [
   ["[Test] Eligible — next steps", <EligibleEmail key="a" firstName="Jane" donorType="egg" />],
-  ["[Test] Not eligible — thank you", <IneligibleEmail key="b" firstName="Jane" />],
+  ["[Test] Received — under review", <IneligibleEmail key="b" firstName="Jane" />],
+  ["[Test] Declined by staff", <DeclinedEmail key="b2" firstName="Jane" />],
   ["[Test] Admin — new application", <AdminNewApplicationEmail key="c" name="Jane Doe" />],
 ] as const;
 

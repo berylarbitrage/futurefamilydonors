@@ -62,21 +62,13 @@ export default async function ResultPage({
               <Heart className="size-8" strokeWidth={2.5} aria-hidden />
             </span>
             <h1 className="mt-6 text-3xl font-extrabold md:text-4xl">
-              Thanks for raising your hand.
+              Thank you — we&apos;ve received your application
             </h1>
             <p className="mt-4 text-lg">
-              We can&apos;t move forward with your application right now. That&apos;s down to the
-              current requirements of our partner programs — set by medical providers, and not a
-              reflection of you.
-            </p>
-            <p className="mt-4 text-lg">
-              Still want to help? Refer a friend. You earn <strong>{SITE.referralBonus}</strong>{" "}
-              when they complete a donation.
+              Our team will review your answers personally and get back to you by email. We&apos;ve
+              also sent you a confirmation — keep an eye on your inbox (and spam folder).
             </p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-              <Button asChild size="lg">
-                <Link href="/refer">Refer a Friend</Link>
-              </Button>
               <Button asChild size="lg" variant="primary">
                 <Link href="/">Back to Home</Link>
               </Button>

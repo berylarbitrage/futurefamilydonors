@@ -308,7 +308,7 @@ describe("POST /api/apply", () => {
     expect(await res.json()).toMatchObject({ ok: true, eligible: false });
     expect(apps()[0]).toMatchObject({ eligible: false, fail_reasons: ["smoker"] });
     for (const t of afterTasks) await t();
-    expect(sent[0]!.subject).toMatch(/Thank you/);
+    expect(sent[0]!.subject).toMatch(/received your application/);
   });
 
   it("recomputes eligibility on the server, ignoring any client-sent result", async () => {

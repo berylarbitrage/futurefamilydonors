@@ -231,11 +231,8 @@ export async function POST(req: Request) {
     } else {
       await sendEmail({
         to: email,
-        subject: `Thank you for applying to ${SITE.brand}`,
-        react: createElement(IneligibleEmail, {
-          firstName: d.firstName,
-          referUrl: siteUrl("/refer"),
-        }),
+        subject: `We've received your application — ${SITE.brand}`,
+        react: createElement(IneligibleEmail, { firstName: d.firstName }),
       });
     }
     const adminTo = env("ADMIN_NOTIFY_EMAIL");

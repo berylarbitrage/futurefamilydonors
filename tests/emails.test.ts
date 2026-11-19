@@ -3,6 +3,7 @@ import { createElement } from "react";
 import { render } from "@react-email/components";
 import EligibleEmail from "@/emails/eligible";
 import IneligibleEmail from "@/emails/ineligible";
+import DeclinedEmail from "@/emails/declined";
 import AdminNewApplicationEmail from "@/emails/admin-new-application";
 import { prescreenSummary } from "@/lib/admin/prescreen-summary";
 
@@ -19,11 +20,23 @@ describe("email templates", () => {
     expect(html).toContain("https://x.com/auth/confirm?t=1");
   });
 
-  it("ineligible email contains the referral link", async () => {
-    const html = await render(
-      createElement(IneligibleEmail, { firstName: "Jane", referUrl: "https://x.com/refer" }),
+  it("confirmation for a pre-screen that missed the guidelines never declines", async () => {
+    const text = await render(createElement(IneligibleEmail, { firstName: "Jane" }), {
+      plainText: true,
+    });
+    expect(text).toContain("received your application");
+    expect(text).toContain("review your answers personally");
+    expect(text).not.toMatch(/not able to move forward|can.t move forward/i);
+  });
+
+  it("decline email (sent only by staff) has the referral link and spacing", async () => {
+    const text = await render(
+      createElement(DeclinedEmail, { firstName: "Jane", referUrl: "https://x.com/refer" }),
+      { plainText: true },
     );
-    expect(html).toContain("https://x.com/refer");
+    expect(text).toContain("not able to move forward");
+    expect(text).toContain("https://x.com/refer");
+    expect(text).toMatch(/\$500 when/);
   });
 
   it("admin email lists every pre-screen answer plus the admin link", async () => {
