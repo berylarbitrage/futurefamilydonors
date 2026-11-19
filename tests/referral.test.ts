@@ -9,8 +9,7 @@ describe("referral codes", () => {
   });
   it("builds landing page links", () => {
     expect(referralLinks("Ab3dEf7h", "https://x.com")).toEqual({
-      egg: "https://x.com/egg-donor?ref=Ab3dEf7h",
-      sperm: "https://x.com/sperm-donor?ref=Ab3dEf7h",
+      link: "https://x.com/?ref=Ab3dEf7h",
     });
   });
 });

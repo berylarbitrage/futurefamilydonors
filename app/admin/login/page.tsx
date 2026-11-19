@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { ShieldCheck } from "lucide-react";
 import { LoginCard } from "@/components/auth/login-card";
 import { getRole, getSessionUser } from "@/lib/auth";
+import { safeNext } from "@/lib/auth-links";
 import { isStaff } from "@/lib/roles";
 
 export const metadata: Metadata = {
@@ -15,18 +16,21 @@ export const dynamic = "force-dynamic";
 export default async function AdminLoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; next?: string }>;
 }) {
-  const { supabase, user } = await getSessionUser();
-  if (supabase && user && isStaff(await getRole(supabase, user.id))) redirect("/admin");
   const sp = await searchParams;
+  // Return to the admin page the link pointed at (only /admin pages allowed).
+  const wanted = safeNext(sp.next, "/admin");
+  const next = wanted === "/admin" || wanted.startsWith("/admin/") ? wanted : "/admin";
+  const { supabase, user } = await getSessionUser();
+  if (supabase && user && isStaff(await getRole(supabase, user.id))) redirect(next);
   return (
     <LoginCard
       icon={ShieldCheck}
       area="Admin"
       title="Admin sign in"
       intro="Staff only. Enter your work email and we'll send a one-time sign-in link."
-      next="/admin"
+      next={next}
       error={sp.error}
       wrongAccount={
         user ? `You're signed in as ${user.email}, which is not a staff account.` : null

@@ -105,7 +105,7 @@ export function PrescreenForm({
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [video, setVideo] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const [uploading, setUploading] = useState<{ done: number; total: number } | null>(null);
   const restored = useRef(false);
   const stopPersisting = useRef(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -352,13 +352,14 @@ export function PrescreenForm({
     // Upload the photos with the one-time URLs, then record them. A failed
     // upload doesn't lose the application — photos can be added in the portal.
     if (body.applicationId && body.uploads?.length) {
-      setUploading(true);
       const done: string[] = [];
       const bucket = createClient().storage.from("donor-photos");
       const jobs: { path: string; token: string; file: File | undefined }[] = [
         ...body.uploads.map((u, i) => ({ ...u, file: photos[i] })),
         ...(body.videoUpload && video ? [{ ...body.videoUpload, file: video }] : []),
       ];
+      let finished = 0;
+      setUploading({ done: 0, total: jobs.length });
       await Promise.all(
         jobs.map(async ({ file, ...u }) => {
           if (!file) return;
@@ -366,6 +367,7 @@ export function PrescreenForm({
             contentType: file.type,
           });
           if (!error) done.push(u.path);
+          setUploading({ done: ++finished, total: jobs.length });
         }),
       );
       if (done.length) {
@@ -1066,7 +1068,7 @@ export function PrescreenForm({
           ) : (
             <Button key="submit" type="submit" size="lg" disabled={isSubmitting}>
               {uploading
-                ? "Uploading photos…"
+                ? `Uploading ${Math.min(uploading.done + 1, uploading.total)} of ${uploading.total}…`
                 : isSubmitting
                   ? "Submitting…"
                   : "Submit Application"}

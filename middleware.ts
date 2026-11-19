@@ -11,7 +11,23 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/api/portal") ||
     request.nextUrl.pathname.startsWith("/api/admin") ||
     request.nextUrl.pathname.startsWith("/auth");
-  const response = needsAuth ? await updateSession(request) : NextResponse.next();
+  const { response, signedIn } = needsAuth
+    ? await updateSession(request)
+    : { response: NextResponse.next(), signedIn: null };
+
+  // Admin links (e.g. "Open in Admin" in emails): if nobody is signed in, go to
+  // the admin sign-in page and come back to the same page afterwards. Signed-in
+  // users without staff access still get a 404 from the admin layout.
+  const path = request.nextUrl.pathname;
+  const adminPage = path === "/admin" || path.startsWith("/admin/");
+  if (signedIn === false && adminPage && !path.startsWith("/admin/login")) {
+    const to = request.nextUrl.clone();
+    to.pathname = "/admin/login";
+    to.search = `?next=${encodeURIComponent(path + request.nextUrl.search)}`;
+    const redirect = NextResponse.redirect(to);
+    response.cookies.getAll().forEach((c) => redirect.cookies.set(c));
+    return redirect;
+  }
 
   // Referral tracking: ?ref=CODE -> 30-day first-party cookie (strictly necessary for payouts).
   const ref = request.nextUrl.searchParams.get("ref");
