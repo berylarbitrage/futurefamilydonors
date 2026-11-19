@@ -132,9 +132,10 @@ export async function POST(req: Request) {
   const prescreenDetails: Record<string, unknown> = { schools };
   if (d.previousDonation === "yes") {
     prescreenDetails.previousDonation = {
-      count: d.prevDonationDates?.length ?? 0,
-      dates: [...(d.prevDonationDates ?? [])].sort(),
-      ...(isEgg ? { eggsRetrieved: d.prevEggsRetrieved || null } : {}),
+      count: d.prevDonations?.length ?? 0,
+      donations: [...(d.prevDonations ?? [])]
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .map((r) => (isEgg ? { date: r.date, eggsRetrieved: r.eggs || null } : { date: r.date })),
       pregnancyKnown: d.prevPregnancyKnown ?? null,
       agencyOrClinic: d.prevAgency || null,
     };

@@ -71,18 +71,13 @@ function stepFields(type: DonorType): FieldName[][] {
       "smoker",
       ...(type === "egg" ? (["regularCycles", "birthControl"] as FieldName[]) : []),
       "previousDonation",
-      ...PREV_DONATION_FIELDS.filter((f) => type === "egg" || f !== "prevEggsRetrieved"),
+      ...PREV_DONATION_FIELDS,
     ],
     ["firstName", "lastName", "email", "phone", "smsConsent", "privacyConsent"],
   ];
 }
 
-const PREV_DONATION_FIELDS: FieldName[] = [
-  "prevDonationDates",
-  "prevEggsRetrieved",
-  "prevPregnancyKnown",
-  "prevAgency",
-];
+const PREV_DONATION_FIELDS: FieldName[] = ["prevDonations", "prevPregnancyKnown", "prevAgency"];
 
 const toNumber = (v: unknown) =>
   v === "" || v === null || v === undefined ? undefined : Number(v);
@@ -220,11 +215,16 @@ export function PrescreenForm({
   const updateSchool = (i: number, patch: Partial<SchoolRow>) =>
     setOtherSchools(otherSchools.map((o, j) => (j === i ? { ...o, ...patch } : o)));
 
-  // Previous donations: one calendar date per donation; start with one empty row.
-  const savedDates = watch("prevDonationDates") as string[] | undefined;
-  const prevDonationDates = savedDates?.length ? savedDates : [""];
-  const setPrevDonationDates = (list: string[]) =>
-    form.setValue("prevDonationDates", list, { shouldDirty: true });
+  // Previous donations: one row (date + eggs retrieved) per donation; start with one empty row.
+  type DonationRow = { date: string; eggs?: string };
+  const savedDonations = watch("prevDonations") as DonationRow[] | undefined;
+  const prevDonations: DonationRow[] = savedDonations?.length
+    ? savedDonations
+    : [{ date: "", eggs: "" }];
+  const setPrevDonations = (list: DonationRow[]) =>
+    form.setValue("prevDonations", list, { shouldDirty: true });
+  const updateDonation = (i: number, patch: Partial<DonationRow>) =>
+    setPrevDonations(prevDonations.map((d, j) => (j === i ? { ...d, ...patch } : d)));
   const todayIso = new Date().toISOString().slice(0, 10);
 
   const goTo = (s: number) => {
@@ -744,87 +744,75 @@ export function PrescreenForm({
             {donatedBefore && (
               <div className="border-ink bg-sun-soft space-y-5 rounded-[12px] border-3 border-dashed p-4">
                 <p className="text-sm font-bold">Tell us about your previous donations</p>
-                <fieldset className="space-y-3" aria-describedby="prevDonationDates-hint">
+                <fieldset className="space-y-3" aria-describedby="prevDonations-hint">
                   <legend className="text-sm font-bold">
-                    When was each donation? <span className="text-destructive">*</span>
+                    {type === "egg"
+                      ? "When was each donation, and about how many eggs were retrieved?"
+                      : "When was each donation?"}{" "}
+                    <span className="text-destructive">*</span>
                   </legend>
-                  <p id="prevDonationDates-hint" className="text-muted -mt-1 text-xs">
+                  <p id="prevDonations-hint" className="text-muted -mt-1 text-xs">
                     Add one row per donation and pick the date from the calendar. If you don&apos;t
                     remember the exact day, pick a date close to it.
+                    {type === "egg" && " For eggs, an estimate is fine, or write 'Not sure'."}
                   </p>
-                  {prevDonationDates.map((value, i) => (
+                  {prevDonations.map((row, i) => (
                     <div key={i} className="flex items-end gap-2">
-                      <Field
-                        id={`prevDonationDates-${i}`}
-                        label={`Donation ${i + 1}`}
-                        className="flex-1"
+                      <div
+                        className={`grid flex-1 gap-3 ${type === "egg" ? "grid-cols-[1fr_8rem]" : ""}`}
                       >
-                        <Input
-                          id={`prevDonationDates-${i}`}
-                          type="date"
-                          max={todayIso}
-                          value={value}
-                          onChange={(e) =>
-                            setPrevDonationDates(
-                              prevDonationDates.map((v, j) => (j === i ? e.target.value : v)),
-                            )
-                          }
-                        />
-                      </Field>
-                      {prevDonationDates.length > 1 && (
+                        <Field id={`prevDonations-${i}`} label={`Donation ${i + 1}`}>
+                          <Input
+                            id={`prevDonations-${i}`}
+                            type="date"
+                            max={todayIso}
+                            value={row.date}
+                            onChange={(e) => updateDonation(i, { date: e.target.value })}
+                          />
+                        </Field>
+                        {type === "egg" && (
+                          <Field id={`prevDonationsEggs-${i}`} label="Eggs retrieved">
+                            <Input
+                              id={`prevDonationsEggs-${i}`}
+                              inputMode="numeric"
+                              maxLength={40}
+                              placeholder="e.g. 15"
+                              value={row.eggs ?? ""}
+                              onChange={(e) => updateDonation(i, { eggs: e.target.value })}
+                            />
+                          </Field>
+                        )}
+                      </div>
+                      {prevDonations.length > 1 && (
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
                           aria-label={`Remove donation ${i + 1}`}
-                          onClick={() =>
-                            setPrevDonationDates(prevDonationDates.filter((_, j) => j !== i))
-                          }
+                          onClick={() => setPrevDonations(prevDonations.filter((_, j) => j !== i))}
                         >
                           <X aria-hidden />
                         </Button>
                       )}
                     </div>
                   ))}
-                  {prevDonationDates.length < MAX_PREV_DONATIONS && (
+                  {prevDonations.length < MAX_PREV_DONATIONS && (
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => setPrevDonationDates([...prevDonationDates, ""])}
+                      onClick={() => setPrevDonations([...prevDonations, { date: "", eggs: "" }])}
                     >
                       <Plus aria-hidden /> Add another donation
                     </Button>
                   )}
-                  <p className="text-sm font-semibold">
-                    Total donations: {prevDonationDates.length}
-                  </p>
-                  {err("prevDonationDates") && (
-                    <p
-                      id="prevDonationDates-error"
-                      role="alert"
-                      className="text-destructive text-sm"
-                    >
-                      {err("prevDonationDates")}
+                  <p className="text-sm font-semibold">Total donations: {prevDonations.length}</p>
+                  {err("prevDonations") && (
+                    <p id="prevDonations-error" role="alert" className="text-destructive text-sm">
+                      {err("prevDonations")}
                     </p>
                   )}
                 </fieldset>
-                {type === "egg" && (
-                  <Field
-                    id="prevEggsRetrieved"
-                    label="About how many eggs were retrieved each time?"
-                    hint="An estimate is fine, or write 'Not sure'"
-                    required
-                    error={err("prevEggsRetrieved")}
-                  >
-                    <Input
-                      id="prevEggsRetrieved"
-                      maxLength={300}
-                      {...inv("prevEggsRetrieved")}
-                      {...register("prevEggsRetrieved")}
-                    />
-                  </Field>
-                )}
                 <fieldset
                   className="space-y-2"
                   aria-describedby={

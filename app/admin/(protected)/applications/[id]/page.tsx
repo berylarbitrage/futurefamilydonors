@@ -368,7 +368,21 @@ function previousDonationRows(details: unknown): [string, unknown][] {
   const pregnancy = { yes: "Yes", no: "No", unknown: "Unknown" } as Record<string, string>;
   return [
     ["· Times donated", p.count],
-    ["· When", Array.isArray(p.dates) ? (p.dates as string[]).join(", ") : p.when],
+    ...(Array.isArray(p.donations)
+      ? ([
+          [
+            "· Donations",
+            (p.donations as { date: string; eggsRetrieved?: string | null }[]).map((r) =>
+              r.eggsRetrieved !== undefined
+                ? `${r.date} — eggs retrieved: ${r.eggsRetrieved ?? "?"}`
+                : r.date,
+            ),
+          ],
+        ] as [string, unknown][])
+      : ([["· When", Array.isArray(p.dates) ? (p.dates as string[]).join(", ") : p.when]] as [
+          string,
+          unknown,
+        ][])),
     ...(p.eggsRetrieved !== undefined
       ? ([["· Eggs retrieved", p.eggsRetrieved]] as [string, unknown][])
       : []),

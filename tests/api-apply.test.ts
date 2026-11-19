@@ -245,20 +245,17 @@ describe("POST /api/apply", () => {
     );
     expect(missing.status).toBe(400);
     const paths = (await missing.json()).issues.map((i: { path: string }) => i.path).sort();
-    expect(paths).toEqual([
-      "prevAgency",
-      "prevDonationDates",
-      "prevEggsRetrieved",
-      "prevPregnancyKnown",
-    ]);
+    expect(paths).toEqual(["prevAgency", "prevDonations", "prevPregnancyKnown"]);
     const ok = await POST(
       req({
         donorType: "egg",
         data: eggData({
           email: "jo@example.com",
           previousDonation: "yes",
-          prevDonationDates: ["2024-03-15", "2022-06-01"],
-          prevEggsRetrieved: "about 15 each",
+          prevDonations: [
+            { date: "2024-03-15", eggs: "18" },
+            { date: "2022-06-01", eggs: "about 12" },
+          ],
           prevPregnancyKnown: "unknown",
           prevAgency: "Sample Fertility Clinic",
         }),
@@ -269,8 +266,10 @@ describe("POST /api/apply", () => {
       schools: [{ name: "University of Illinois", level: "Bachelor's degree" }],
       previousDonation: {
         count: 2,
-        dates: ["2022-06-01", "2024-03-15"],
-        eggsRetrieved: "about 15 each",
+        donations: [
+          { date: "2022-06-01", eggsRetrieved: "about 12" },
+          { date: "2024-03-15", eggsRetrieved: "18" },
+        ],
         pregnancyKnown: "unknown",
         agencyOrClinic: "Sample Fertility Clinic",
       },
@@ -385,7 +384,7 @@ describe("POST /api/apply", () => {
           data: eggData({
             email: "x@example.com",
             previousDonation: "yes",
-            prevDonationDates: dates,
+            prevDonations: dates.map((date) => ({ date })),
             prevPregnancyKnown: "no",
             prevAgency: "Clinic",
           }),
@@ -393,7 +392,7 @@ describe("POST /api/apply", () => {
       );
       expect(res.status).toBe(400);
       const issues = (await res.json()).issues as { path: string; message: string }[];
-      expect(issues.find((i) => i.path === "prevDonationDates")?.message).toBe(msg);
+      expect(issues.find((i) => i.path === "prevDonations")?.message).toBe(msg);
     }
   });
 

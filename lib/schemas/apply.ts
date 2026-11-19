@@ -87,9 +87,14 @@ export const step1Schema = z.object({
 
 /** Follow-up questions when "Have you donated before?" is Yes. */
 export const previousDonationSchema = {
-  /** One calendar date (YYYY-MM-DD) per previous donation; the count is the list length. */
-  prevDonationDates: z.array(z.string().max(10)).max(MAX_PREV_DONATIONS).optional(),
-  prevEggsRetrieved: optText(300), // egg only
+  /**
+   * One row per previous donation: its calendar date (YYYY-MM-DD) and, for egg
+   * donors, about how many eggs were retrieved that time. Count = list length.
+   */
+  prevDonations: z
+    .array(z.object({ date: z.string().max(10), eggs: z.string().trim().max(40).optional() }))
+    .max(MAX_PREV_DONATIONS)
+    .optional(),
   // nullish: an unanswered radio group is null; the "Please choose" message comes from conditionalIssues.
   prevPregnancyKnown: z.enum(YES_NO_UNKNOWN).nullish(),
   prevAgency: optText(300),
@@ -149,15 +154,16 @@ export function conditionalIssues(type: DonorType, v: Values): Record<string, st
   if (extraSchools.some((s) => s?.name?.trim() && !s.level))
     out.otherSchools = "Please choose a level of study for each school";
   if (v.previousDonation === "yes") {
-    const dates = (v.prevDonationDates as string[] | undefined) ?? [];
+    const rows = (v.prevDonations as { date?: string; eggs?: string }[] | undefined) ?? [];
     const today = new Date().toISOString().slice(0, 10);
-    if (dates.length === 0) out.prevDonationDates = "Please add at least one donation date";
-    else if (dates.some((d) => !parseIsoDate(d)))
-      out.prevDonationDates = "Please pick a date for each donation";
-    else if (dates.some((d) => d > today))
-      out.prevDonationDates = "Donation dates can't be in the future";
-    if (type === "egg" && blank(v.prevEggsRetrieved))
-      out.prevEggsRetrieved = "Please enter an approximate number (or 'Not sure')";
+    if (rows.length === 0) out.prevDonations = "Please add at least one donation";
+    else if (rows.some((r) => !parseIsoDate(r?.date ?? "")))
+      out.prevDonations = "Please pick a date for each donation";
+    else if (rows.some((r) => (r?.date ?? "") > today))
+      out.prevDonations = "Donation dates can't be in the future";
+    else if (type === "egg" && rows.some((r) => !r?.eggs?.trim()))
+      out.prevDonations =
+        "Please enter about how many eggs were retrieved each time (or 'Not sure')";
     if (blank(v.prevPregnancyKnown)) out.prevPregnancyKnown = "Please choose an option";
     if (blank(v.prevAgency)) out.prevAgency = "Please enter the agency or clinic";
   }
@@ -208,7 +214,9 @@ export function pruneHidden(type: DonorType, v: Application): Application {
   if (out.previousDonation !== "yes") {
     for (const k of Object.keys(previousDonationSchema)) delete out[k];
   }
-  if (type !== "egg") delete out.prevEggsRetrieved;
+  if (type !== "egg" && Array.isArray(out.prevDonations)) {
+    out.prevDonations = (out.prevDonations as { date: string }[]).map(({ date }) => ({ date }));
+  }
   return out as Application;
 }
 
