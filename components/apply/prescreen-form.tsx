@@ -18,7 +18,12 @@ import {
   type eggApplicationSchema,
   type spermApplicationSchema,
 } from "@/lib/schemas/apply";
-import { EDUCATION_LEVELS, MIN_APPLICANT_AGE, type DonorType } from "@/config/eligibility";
+import {
+  EDUCATION_LEVELS,
+  MIN_APPLICANT_AGE,
+  SCHOOL_LEVELS,
+  type DonorType,
+} from "@/config/eligibility";
 import { US_STATES } from "@/config/us-states";
 import { COUNTRIES, DEFAULT_COUNTRY, isUnitedStates } from "@/config/countries";
 import { SITE } from "@/config/site";
@@ -55,6 +60,7 @@ function stepFields(type: DonorType): FieldName[][] {
       "postalCode",
       "education",
       "school",
+      "schoolLevel",
       "otherSchools",
       "howHeard",
     ],
@@ -204,9 +210,15 @@ export function PrescreenForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch, step, storageKey, type]);
 
-  const otherSchools = (watch("otherSchools") ?? []) as string[];
-  const setOtherSchools = (list: string[]) =>
-    form.setValue("otherSchools", list, { shouldDirty: true });
+  type SchoolRow = { name: string; level: string };
+  // Older saved drafts stored plain names; treat those as rows without a level.
+  const otherSchools = ((watch("otherSchools") ?? []) as (SchoolRow | string)[]).map((s) =>
+    typeof s === "string" ? { name: s, level: "" } : s,
+  );
+  const setOtherSchools = (list: SchoolRow[]) =>
+    form.setValue("otherSchools", list as FormValues["otherSchools"], { shouldDirty: true });
+  const updateSchool = (i: number, patch: Partial<SchoolRow>) =>
+    setOtherSchools(otherSchools.map((o, j) => (j === i ? { ...o, ...patch } : o)));
 
   // Previous donations: one calendar date per donation; start with one empty row.
   const savedDates = watch("prevDonationDates") as string[] | undefined;
@@ -524,34 +536,66 @@ export function PrescreenForm({
                 ))}
               </NativeSelect>
             </Field>
-            <Field
-              id="school"
-              label="School name"
-              hint="Search and pick your college or university. Not listed? Just type the full name. Attended more than one? Add them below."
-              required
-              error={err("school")}
-            >
-              <SchoolCombobox
-                id="school"
-                value={(watch("school") as string | undefined) ?? ""}
-                onChange={(v) => form.setValue("school", v, { shouldDirty: true })}
-                invalid={!!e.school}
-                describedBy={e.school ? "school-error" : undefined}
-              />
-            </Field>
-            {otherSchools.map((value, i) => (
-              <div key={i} className="flex items-end gap-2">
-                <Field
-                  id={`otherSchools-${i}`}
-                  label={`Another school (${i + 2})`}
-                  className="flex-1"
+            <div className="grid gap-3 sm:grid-cols-[1fr_13rem]">
+              <Field id="school" label="School name" required error={err("school")}>
+                <SchoolCombobox
+                  id="school"
+                  value={(watch("school") as string | undefined) ?? ""}
+                  onChange={(v) => form.setValue("school", v, { shouldDirty: true })}
+                  invalid={!!e.school}
+                  describedBy={e.school ? "school-error" : undefined}
+                />
+              </Field>
+              <Field id="schoolLevel" label="Level" required error={err("schoolLevel")}>
+                <NativeSelect
+                  id="schoolLevel"
+                  defaultValue=""
+                  {...inv("schoolLevel")}
+                  {...register("schoolLevel")}
                 >
-                  <SchoolCombobox
-                    id={`otherSchools-${i}`}
-                    value={value}
-                    onChange={(v) => setOtherSchools(otherSchools.map((o, j) => (j === i ? v : o)))}
-                  />
-                </Field>
+                  <option value="" disabled>
+                    Select one
+                  </option>
+                  {SCHOOL_LEVELS.map((l) => (
+                    <option key={l} value={l}>
+                      {l}
+                    </option>
+                  ))}
+                </NativeSelect>
+              </Field>
+            </div>
+            <p className="text-muted -mt-3 text-xs">
+              Search and pick your college or university. Not listed? Just type the full name.
+              Attended more than one? Add them below.
+            </p>
+            {otherSchools.map((row, i) => (
+              <div key={i} className="flex items-end gap-2">
+                <div className="grid flex-1 gap-3 sm:grid-cols-[1fr_13rem]">
+                  <Field id={`otherSchools-${i}`} label={`Another school (${i + 2})`}>
+                    <SchoolCombobox
+                      id={`otherSchools-${i}`}
+                      value={row.name}
+                      onChange={(v) => updateSchool(i, { name: v })}
+                    />
+                  </Field>
+                  <Field id={`otherSchoolsLevel-${i}`} label="Level">
+                    <NativeSelect
+                      id={`otherSchoolsLevel-${i}`}
+                      value={row.level}
+                      aria-invalid={!!e.otherSchools && !!row.name.trim() && !row.level}
+                      onChange={(ev) => updateSchool(i, { level: ev.target.value })}
+                    >
+                      <option value="" disabled>
+                        Select one
+                      </option>
+                      {SCHOOL_LEVELS.map((l) => (
+                        <option key={l} value={l}>
+                          {l}
+                        </option>
+                      ))}
+                    </NativeSelect>
+                  </Field>
+                </div>
                 <Button
                   type="button"
                   variant="ghost"
@@ -563,12 +607,17 @@ export function PrescreenForm({
                 </Button>
               </div>
             ))}
+            {err("otherSchools") && (
+              <p id="otherSchools-error" role="alert" className="text-destructive text-sm">
+                {err("otherSchools")}
+              </p>
+            )}
             {otherSchools.length < MAX_OTHER_SCHOOLS && (
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => setOtherSchools([...otherSchools, ""])}
+                onClick={() => setOtherSchools([...otherSchools, { name: "", level: "" }])}
               >
                 <Plus aria-hidden /> Add another school
               </Button>

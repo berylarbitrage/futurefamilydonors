@@ -12,6 +12,16 @@ export const EDUCATION_LEVELS = [
 ] as const;
 export type EducationLevel = (typeof EDUCATION_LEVELS)[number];
 
+/** Level of study at each school the applicant lists in the pre-screen. */
+export const SCHOOL_LEVELS = [
+  "Associate degree",
+  "Bachelor's degree",
+  "Master's degree",
+  "Doctorate (PhD)",
+  "Professional degree (MD, JD, etc.)",
+  "Other / non-degree",
+] as const;
+
 export const ELIGIBILITY = {
   egg: {
     minAge: 20,

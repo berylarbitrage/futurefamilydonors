@@ -123,7 +123,12 @@ export async function POST(req: Request) {
   const yes = (v: string | undefined) => (v === undefined ? null : v === "yes");
   const isEgg = donorType === "egg";
   const us = isUnitedStates(d.country);
-  const schools = [d.school, ...(d.otherSchools ?? [])].map((s) => s.trim()).filter(Boolean);
+  const schools = [
+    { name: d.school.trim(), level: d.schoolLevel },
+    ...(d.otherSchools ?? [])
+      .map((s) => ({ name: s.name.trim(), level: s.level }))
+      .filter((s) => s.name),
+  ];
   const prescreenDetails: Record<string, unknown> = { schools };
   if (d.previousDonation === "yes") {
     prescreenDetails.previousDonation = {

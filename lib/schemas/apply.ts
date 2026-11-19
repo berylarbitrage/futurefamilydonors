@@ -3,7 +3,7 @@
  * and the /api/apply route so validation is identical on both sides.
  */
 import { z } from "zod";
-import { EDUCATION_LEVELS, type DonorType } from "@/config/eligibility";
+import { EDUCATION_LEVELS, SCHOOL_LEVELS, type DonorType } from "@/config/eligibility";
 import { US_STATE_CODES } from "@/config/us-states";
 import { COUNTRIES, DEFAULT_COUNTRY, isUnitedStates } from "@/config/countries";
 import { ageOn, parseIsoDate } from "@/lib/dates";
@@ -71,8 +71,17 @@ export const step1Schema = z.object({
   postalCode: optText(20),
   education: z.enum(EDUCATION_LEVELS, { error: "Please select your education level" }),
   school: z.string().trim().min(1, "Please enter your school name").max(120),
-  /** Additional schools (optional, blank entries are ignored). */
-  otherSchools: z.array(z.string().trim().max(120)).max(MAX_OTHER_SCHOOLS).optional(),
+  schoolLevel: z.enum(SCHOOL_LEVELS, { error: "Please choose your level of study at this school" }),
+  /** Additional schools (optional; rows without a name are ignored). */
+  otherSchools: z
+    .array(
+      z.object({
+        name: z.string().trim().max(120),
+        level: z.enum(SCHOOL_LEVELS).or(z.literal("")),
+      }),
+    )
+    .max(MAX_OTHER_SCHOOLS)
+    .optional(),
   howHeard: z.enum(HOW_HEARD).optional().or(z.literal("")),
 });
 
@@ -136,6 +145,9 @@ export function conditionalIssues(type: DonorType, v: Values): Record<string, st
     if (blank(v.region)) out.region = "Please enter your state or province";
     if (blank(v.city)) out.city = "Please enter your city";
   }
+  const extraSchools = (v.otherSchools as { name?: string; level?: string }[] | undefined) ?? [];
+  if (extraSchools.some((s) => s?.name?.trim() && !s.level))
+    out.otherSchools = "Please choose a level of study for each school";
   if (v.previousDonation === "yes") {
     const dates = (v.prevDonationDates as string[] | undefined) ?? [];
     const today = new Date().toISOString().slice(0, 10);

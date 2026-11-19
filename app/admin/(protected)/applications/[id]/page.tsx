@@ -353,8 +353,12 @@ export default async function ApplicationDetailPage({
 
 /** Follow-up answers to "Have you donated before?" (stored in prescreen_details). */
 function schoolsOf(details: unknown): string[] | null {
-  const d = details as { schools?: string[]; school?: string } | null;
-  if (d?.schools?.length) return d.schools;
+  type School = string | { name: string; level?: string };
+  const d = details as { schools?: School[]; school?: string } | null;
+  if (d?.schools?.length)
+    return d.schools.map((s) =>
+      typeof s === "string" ? s : s.level ? `${s.name} (${s.level})` : s.name,
+    );
   return d?.school ? [d.school] : null;
 }
 

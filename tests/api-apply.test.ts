@@ -62,6 +62,7 @@ function eggData(over: Record<string, unknown> = {}) {
     zip: "60601",
     education: "Bachelor's",
     school: "University of Illinois",
+    schoolLevel: "Bachelor's degree",
     howHeard: "Google",
     heightFt: 5,
     heightIn: 6,
@@ -108,12 +109,22 @@ describe("POST /api/apply", () => {
     const res = await POST(
       req({
         donorType: "egg",
-        data: eggData({ otherSchools: ["Harvard University", "  ", "MIT"] }),
+        data: eggData({
+          otherSchools: [
+            { name: "Harvard University", level: "Master's degree" },
+            { name: "  ", level: "" },
+            { name: "MIT", level: "Doctorate (PhD)" },
+          ],
+        }),
       }),
     );
     expect(res.status).toBe(200);
     expect(apps()[0]!.prescreen_details).toEqual({
-      schools: ["University of Illinois", "Harvard University", "MIT"],
+      schools: [
+        { name: "University of Illinois", level: "Bachelor's degree" },
+        { name: "Harvard University", level: "Master's degree" },
+        { name: "MIT", level: "Doctorate (PhD)" },
+      ],
     });
   });
 
@@ -136,6 +147,19 @@ describe("POST /api/apply", () => {
       expect(u.path).toMatch(new RegExp(`^${body.applicationId}/[0-9a-f-]{36}\\.jpg$`));
       expect(u.token).toBeTruthy();
     }
+  });
+
+  it("requires a level for the first school and for each extra school with a name", async () => {
+    for (const [over, path] of [
+      [{ schoolLevel: "" }, "schoolLevel"],
+      [{ otherSchools: [{ name: "Harvard University", level: "" }] }, "otherSchools"],
+    ] as const) {
+      const res = await POST(req({ donorType: "egg", data: eggData(over) }));
+      expect(res.status).toBe(400);
+      const paths = (await res.json()).issues.map((i: { path: string }) => i.path);
+      expect(paths).toEqual([path]);
+    }
+    expect(apps()).toHaveLength(0);
   });
 
   it("stores an eligible application and sends eligible + admin emails", async () => {
@@ -242,7 +266,7 @@ describe("POST /api/apply", () => {
     );
     expect(ok.status).toBe(200);
     expect(apps()[0]!.prescreen_details).toEqual({
-      schools: ["University of Illinois"],
+      schools: [{ name: "University of Illinois", level: "Bachelor's degree" }],
       previousDonation: {
         count: 2,
         dates: ["2022-06-01", "2024-03-15"],
