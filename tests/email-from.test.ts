@@ -8,6 +8,7 @@ afterEach(() => {
   delete process.env.EMAIL_LABEL;
   delete process.env.VERCEL_ENV;
   delete process.env.NEXT_PUBLIC_SITE_URL;
+  delete process.env.VERCEL_PROJECT_PRODUCTION_URL;
 });
 
 describe("sender address", () => {
@@ -34,6 +35,11 @@ describe("sender address", () => {
     expect(labelSubject("Hi")).toBe("[PREVIEW] Hi");
     process.env.EMAIL_LABEL = "STAGING";
     expect(labelSubject("Hi")).toBe("[STAGING] Hi");
+  });
+  it("uses the Vercel project's own domain when the site address isn't set", () => {
+    process.env.VERCEL_ENV = "production";
+    process.env.VERCEL_PROJECT_PRODUCTION_URL = "preview.example.com";
+    expect(labelSubject("Hi")).toBe("[PREVIEW] Hi");
   });
   it("leaves the real site's emails unlabelled", () => {
     process.env.EMAIL_FROM = "hello@example.com";
