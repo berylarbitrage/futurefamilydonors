@@ -63,11 +63,15 @@ export async function sendEmail(opts: {
   return (await sendEmailResult(opts)).ok;
 }
 
-/** "From" header. A bare address gets the brand name as display name. */
+/**
+ * "From" header. The display name is always the brand, so every deployment
+ * (production or a preview) sends as e.g. "Good Beginnings Club"; only the
+ * address is taken from EMAIL_FROM ("hello@x.com" or "Any Name <hello@x.com>").
+ */
 export function emailFrom(): string {
   const configured = env("EMAIL_FROM")?.trim();
-  if (!configured) return `${SITE.brand} <onboarding@resend.dev>`;
-  return configured.includes("<") ? configured : `${SITE.brand} <${configured}>`;
+  const address = configured?.match(/<([^>]+)>/)?.[1]?.trim() ?? configured;
+  return `${SITE.brand} <${address || "onboarding@resend.dev"}>`;
 }
 
 /** Domain part of the configured sender, e.g. "futurefamilydonors.com". */
