@@ -7,6 +7,7 @@ import { EDUCATION_LEVELS, type DonorType } from "@/config/eligibility";
 import { US_STATE_CODES } from "@/config/us-states";
 import { COUNTRIES, DEFAULT_COUNTRY, isUnitedStates } from "@/config/countries";
 import { ageOn, parseIsoDate } from "@/lib/dates";
+import { PHOTO_LIMITS } from "@/lib/full-app";
 
 /** How many extra schools an applicant can add besides the first one. */
 export const MAX_OTHER_SCHOOLS = 4;
@@ -205,4 +206,18 @@ export const applyRequestSchema = z.object({
   data: z.record(z.string(), z.unknown()),
   turnstileToken: z.string().optional(),
   website: z.string().optional(), // honeypot — must be empty
+  /** Photos the browser will upload once the application is stored (3–5). */
+  photos: z
+    .array(
+      z.object({
+        contentType: z.enum(PHOTO_LIMITS.mimeTypes),
+        size: z
+          .number()
+          .int()
+          .positive()
+          .max(PHOTO_LIMITS.maxBytes, "Photos must be 5 MB or smaller"),
+      }),
+    )
+    .min(PHOTO_LIMITS.minCount, `Please add at least ${PHOTO_LIMITS.minCount} photos`)
+    .max(PHOTO_LIMITS.maxCount, `Please add no more than ${PHOTO_LIMITS.maxCount} photos`),
 });

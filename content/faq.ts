@@ -14,7 +14,7 @@ const sperm = ELIGIBILITY.sperm;
 /* ---- The basics ---------------------------------------------------------- */
 const PRESCREEN: FaqItem = {
   q: "How long is the pre-screen, really?",
-  a: "About 3 minutes. Basic stuff only. No Social Security number, no medical records, no photos.",
+  a: "About 3 minutes. Basic stuff plus 3–5 photos of yourself. No Social Security number, no medical records.",
 };
 const AFTER: FaqItem = {
   q: "I hit submit. Now what?",

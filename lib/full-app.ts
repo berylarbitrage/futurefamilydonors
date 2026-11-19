@@ -569,6 +569,7 @@ export function sectionSchema(id: FormSectionId, donorType: DonorType, strict: b
   });
 }
 
+/** 3–5 photos: uploaded in the pre-screen, managed later in the portal. */
 export const PHOTO_LIMITS = {
   minCount: 3,
   maxCount: 5,

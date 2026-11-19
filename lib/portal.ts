@@ -46,10 +46,9 @@ export async function getFullApp(supabase: SupabaseClient, applicationId: string
   return (data as FullAppRow | null) ?? null;
 }
 
+/** Photos are done once there are at least 3 (a childhood photo is welcome, not required). */
 export function photosComplete(kinds: string[]): boolean {
-  return (
-    kinds.includes("childhood") && kinds.includes("recent") && kinds.length >= PHOTO_LIMITS.minCount
-  );
+  return kinds.length >= PHOTO_LIMITS.minCount;
 }
 
 export function formSectionsComplete(completed: string[]): boolean {

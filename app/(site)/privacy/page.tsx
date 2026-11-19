@@ -26,10 +26,11 @@ export default function PrivacyPage() {
         <h2>2. Information we collect</h2>
         <ul>
           <li>
-            <strong>Pre-screen:</strong> date of birth, state, ZIP code, education, school name,
-            height, weight, nicotine use, basic reproductive-health answers, prior donation, contact
-            details (name, email, phone), consent choices, and how you heard about us. We do not
-            collect your SSN, medical records, photos, or race/ethnicity at this stage.
+            <strong>Pre-screen:</strong> date of birth, state, ZIP code, education, school name(s),
+            height, weight, nicotine use, basic reproductive-health answers, prior donation dates,
+            3–5 photos of you, contact details (name, email, phone), consent choices, and how you
+            heard about us. We do not collect your SSN, medical records, or race/ethnicity at this
+            stage.
           </li>
           <li>
             <strong>Full application (if invited):</strong> personal background, physical

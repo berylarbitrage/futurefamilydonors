@@ -80,8 +80,11 @@ function eggData(over: Record<string, unknown> = {}) {
     ...over,
   };
 }
+const PHOTOS = [1, 2, 3].map(() => ({ contentType: "image/jpeg", size: 1000 }));
 function req(body: unknown) {
   ipCounter++;
+  // Every pre-screen sends 3–5 photos unless a test says otherwise.
+  if (body && typeof body === "object" && !("photos" in body)) body = { ...body, photos: PHOTOS };
   return new Request("http://localhost/api/apply", {
     method: "POST",
     headers: { "content-type": "application/json", "x-forwarded-for": `10.0.0.${ipCounter}` },
@@ -114,11 +117,32 @@ describe("POST /api/apply", () => {
     });
   });
 
+  it("requires 3–5 photos", async () => {
+    for (const photos of [PHOTOS.slice(0, 2), [...PHOTOS, ...PHOTOS]]) {
+      const res = await POST(req({ donorType: "egg", data: eggData(), photos }));
+      expect(res.status).toBe(400);
+      expect(apps()).toHaveLength(0);
+    }
+  });
+
+  it("returns one signed upload url per photo, inside the application's folder", async () => {
+    const res = await POST(req({ donorType: "egg", data: eggData() }));
+    const body = (await res.json()) as {
+      applicationId: string;
+      uploads: { path: string; token: string }[];
+    };
+    expect(body.uploads).toHaveLength(3);
+    for (const u of body.uploads) {
+      expect(u.path).toMatch(new RegExp(`^${body.applicationId}/[0-9a-f-]{36}\\.jpg$`));
+      expect(u.token).toBeTruthy();
+    }
+  });
+
   it("stores an eligible application and sends eligible + admin emails", async () => {
     const res = await POST(req({ donorType: "egg", data: eggData() }));
     expect(res.status).toBe(200);
     // New applicant: signed in and sent straight on to the full application.
-    expect(await res.json()).toEqual({
+    expect(await res.json()).toMatchObject({
       ok: true,
       eligible: true,
       continueUrl: "/portal/application?welcome=1",
@@ -145,7 +169,7 @@ describe("POST /api/apply", () => {
   it("never auto-signs-in an existing account (email backup link only)", async () => {
     existingUser = true;
     const res = await POST(req({ donorType: "egg", data: eggData() }));
-    expect(await res.json()).toEqual({ ok: true, eligible: true });
+    expect(await res.json()).toMatchObject({ ok: true, eligible: true });
     expect(signedIn).toEqual([]);
     for (const t of afterTasks) await t();
     expect(sent[0]).toMatchObject({ to: "jane@example.com" });
@@ -231,7 +255,7 @@ describe("POST /api/apply", () => {
 
   it("stores an ineligible application with reasons", async () => {
     const res = await POST(req({ donorType: "egg", data: eggData({ smoker: "yes" }) }));
-    expect(await res.json()).toEqual({ ok: true, eligible: false });
+    expect(await res.json()).toMatchObject({ ok: true, eligible: false });
     expect(apps()[0]).toMatchObject({ eligible: false, fail_reasons: ["smoker"] });
     for (const t of afterTasks) await t();
     expect(sent[0]!.subject).toMatch(/Thank you/);

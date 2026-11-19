@@ -32,12 +32,16 @@ import { Button } from "@/components/ui/button";
 import { YesNo } from "@/components/forms/yes-no";
 import { Honeypot } from "@/components/forms/honeypot";
 import { Turnstile, type TurnstileStatus } from "@/components/forms/turnstile";
+import { SchoolCombobox } from "@/components/forms/school-combobox";
+import { PrescreenPhotos } from "@/components/apply/prescreen-photos";
+import { PHOTO_LIMITS } from "@/lib/full-app";
+import { createClient } from "@/lib/supabase/client";
 
 type FormValues = z.input<typeof eggApplicationSchema> &
   Partial<z.input<typeof spermApplicationSchema>>;
 type FieldName = keyof FormValues;
 
-const STEP_TITLES = ["About you", "Health basics", "Contact details"] as const;
+const STEP_TITLES = ["About you", "Health basics", "Photos & contact"] as const;
 
 function stepFields(type: DonorType): FieldName[][] {
   return [
@@ -93,6 +97,10 @@ export function PrescreenForm({
   const [tsStatus, setTsStatus] = useState<TurnstileStatus>("loading");
   const [tsReset, setTsReset] = useState(0);
   const [honeypot, setHoneypot] = useState("");
+  // Photos stay in memory (not in the saved draft) until submit.
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const restored = useRef(false);
   const stopPersisting = useRef(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -248,6 +256,13 @@ export function PrescreenForm({
 
   const onSubmit = async (values: FormValues) => {
     setServerError(null);
+    if (photos.length < PHOTO_LIMITS.minCount || photos.length > PHOTO_LIMITS.maxCount) {
+      setPhotoError(
+        `Please add ${PHOTO_LIMITS.minCount}–${PHOTO_LIMITS.maxCount} photos (you have ${photos.length}).`,
+      );
+      document.getElementById("photos-hint")?.scrollIntoView({ block: "center" });
+      return;
+    }
     if (turnstileSiteKey && !token) {
       setServerError(
         tsStatus === "error"
@@ -266,6 +281,7 @@ export function PrescreenForm({
           data: values,
           turnstileToken: token,
           website: honeypot,
+          photos: photos.map((f) => ({ contentType: f.type, size: f.size })),
         }),
       });
     } catch {
@@ -278,6 +294,8 @@ export function PrescreenForm({
     const body = (await res.json().catch(() => ({}))) as {
       eligible?: boolean;
       continueUrl?: string;
+      applicationId?: string;
+      uploads?: { path: string; token: string }[];
       error?: string;
       code?: string;
       ref?: string;
@@ -307,6 +325,30 @@ export function PrescreenForm({
       sessionStorage.removeItem(storageKey);
     } catch {}
     trackLead(type);
+    // Upload the photos with the one-time URLs, then record them. A failed
+    // upload doesn't lose the application — photos can be added in the portal.
+    if (body.applicationId && body.uploads?.length) {
+      setUploading(true);
+      const done: string[] = [];
+      const bucket = createClient().storage.from("donor-photos");
+      await Promise.all(
+        body.uploads.map(async (u, i) => {
+          const file = photos[i];
+          if (!file) return;
+          const { error } = await bucket.uploadToSignedUrl(u.path, u.token, file, {
+            contentType: file.type,
+          });
+          if (!error) done.push(u.path);
+        }),
+      );
+      if (done.length) {
+        await fetch("/api/apply/photos", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ applicationId: body.applicationId, paths: done }),
+        }).catch(() => undefined);
+      }
+    }
     if (body.continueUrl) {
       // Signed in: continue straight into the full application (full page load
       // so the new session cookie is used everywhere).
@@ -485,16 +527,16 @@ export function PrescreenForm({
             <Field
               id="school"
               label="School name"
-              hint="The college or university you attend now, or the last one you attended. Add more below if you've attended other schools."
+              hint="Search and pick your college or university. Not listed? Just type the full name. Attended more than one? Add them below."
               required
               error={err("school")}
             >
-              <Input
+              <SchoolCombobox
                 id="school"
-                autoComplete="organization"
-                maxLength={120}
-                {...inv("school")}
-                {...register("school")}
+                value={(watch("school") as string | undefined) ?? ""}
+                onChange={(v) => form.setValue("school", v, { shouldDirty: true })}
+                invalid={!!e.school}
+                describedBy={e.school ? "school-error" : undefined}
               />
             </Field>
             {otherSchools.map((value, i) => (
@@ -504,14 +546,10 @@ export function PrescreenForm({
                   label={`Another school (${i + 2})`}
                   className="flex-1"
                 >
-                  <Input
+                  <SchoolCombobox
                     id={`otherSchools-${i}`}
-                    autoComplete="off"
-                    maxLength={120}
                     value={value}
-                    onChange={(e) =>
-                      setOtherSchools(otherSchools.map((v, j) => (j === i ? e.target.value : v)))
-                    }
+                    onChange={(v) => setOtherSchools(otherSchools.map((o, j) => (j === i ? v : o)))}
                   />
                 </Field>
                 <Button
@@ -800,6 +838,12 @@ export function PrescreenForm({
 
         {step === 2 && (
           <>
+            <PrescreenPhotos
+              files={photos}
+              onChange={setPhotos}
+              error={photoError}
+              onError={setPhotoError}
+            />
             <div className="grid gap-5 sm:grid-cols-2">
               <Field id="firstName" label="First name" required error={err("firstName")}>
                 <Input
@@ -931,7 +975,11 @@ export function PrescreenForm({
             </Button>
           ) : (
             <Button key="submit" type="submit" size="lg" disabled={isSubmitting}>
-              {isSubmitting ? "Submitting…" : "Submit Application"}
+              {uploading
+                ? "Uploading photos…"
+                : isSubmitting
+                  ? "Submitting…"
+                  : "Submit Application"}
             </Button>
           )}
         </div>

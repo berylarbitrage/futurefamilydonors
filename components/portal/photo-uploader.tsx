@@ -74,9 +74,9 @@ export function PhotoUploader({
   return (
     <div className="space-y-6">
       <p className="text-muted text-sm">
-        Upload {PHOTO_LIMITS.minCount}–{PHOTO_LIMITS.maxCount} photos, including at least one
-        childhood photo and one recent photo (JPG or PNG, 5 MB max each). Photos are stored
-        privately and only shared, without your name, with partner programs.
+        Upload {PHOTO_LIMITS.minCount}–{PHOTO_LIMITS.maxCount} photos in total (JPG or PNG, 5 MB max
+        each). Photos you added in the pre-screen are already here. A childhood photo is welcome.
+        Photos are stored privately and only shared, without your name, with partner programs.
       </p>
       {(["childhood", "recent"] as const).map((kind) => (
         <div key={kind}>

@@ -236,3 +236,9 @@ where id = (select id from auth.users where email = 'you@example.com');
 - 数据库只允许**一个** Owner（唯一索引），第二个会直接报错
 - 数据库层面：只有 Owner 的登录会话能改 `profiles.role`；其他 Admin 只能通过网站的 Team 页改，且服务器会拦下涉及 Admin / Owner 的操作
 - 要换 Owner：先在 SQL Editor 把旧 Owner 改成 `admin`，再把新的设成 `owner`
+
+## School list
+
+`data/universities.json` (used by the pre-screen school picker via `/api/schools`) is built from
+[Hipo/university-domains-list](https://github.com/Hipo/university-domains-list) (MIT licence):
+about 10,000 universities worldwide, stored as `[name, country]` pairs.
