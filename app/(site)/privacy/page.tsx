@@ -11,11 +11,7 @@ export default function PrivacyPage() {
   return (
     <Section eyebrow="Legal" title="Privacy Policy">
       <div className="prose-legal border-ink max-w-3xl rounded-[16px] border-3 bg-white p-6 shadow-[6px_6px_0_0_#111] md:p-10">
-        <p className="bg-sun border-ink rounded-[10px] border-3 p-3 text-sm font-bold">
-          DRAFT — PLACEHOLDER TEXT. This policy must be reviewed by a qualified attorney before
-          launch.
-        </p>
-        <p className="text-sm font-medium">Last updated: [DATE]</p>
+        <p className="text-sm font-medium">Last updated: November 19, 2026</p>
 
         <h2>1. Who we are</h2>
         <p>
@@ -70,8 +66,13 @@ export default function PrivacyPage() {
 
         <h2>5. How long we keep it</h2>
         <p>
-          [RETENTION PERIOD — e.g. pre-screen data for applicants who do not proceed is deleted
-          after 24 months.] Data may be kept longer where required by law.
+          Pre-screen information (including photos) for applicants who do not continue to a full
+          application is deleted 24 months after it was submitted. Full applications are kept while
+          you are an active donor and for 24 months after your last activity with us. Signed
+          agreements, records of completed donations and payment records are kept for as long as the
+          law, our partner clinics&apos; record-keeping rules and FDA requirements make necessary.
+          You can ask us to delete your data sooner (see below), except where we must keep it by
+          law.
         </p>
 
         <h2>6. Your rights and deleting your data</h2>
@@ -87,8 +88,43 @@ export default function PrivacyPage() {
           personal information (including health information); and the right not to be discriminated
           against for exercising these rights. We do not sell or &quot;share&quot; personal
           information for cross-context behavioral advertising without consent. To exercise your
-          rights, email {SITE.contactEmail}. [ATTORNEY TO COMPLETE.]
+          rights, email {SITE.contactEmail}.
         </p>
+        <ul>
+          <li>
+            <strong>Categories we collect:</strong> identifiers (name, email, phone, IP address);
+            personal characteristics (age, height, weight, education, photos); sensitive personal
+            information (health and reproductive information); and internet activity (only with
+            cookie consent). Section 2 above describes each in detail.
+          </li>
+          <li>
+            <strong>Sources and purposes:</strong> we collect this information directly from you,
+            and use it for the purposes in Section 3. We use sensitive personal information only to
+            assess eligibility, match you with families and arrange screening, which are permitted
+            purposes under the CPRA.
+          </li>
+          <li>
+            <strong>Disclosures:</strong> in the last 12 months we have disclosed these categories
+            only to partner medical providers, matched intended parents (without your name, unless
+            you agree otherwise) and our service providers (hosting and email delivery). We have not
+            sold personal information, and we do not knowingly collect information from anyone under
+            16.
+          </li>
+          <li>
+            <strong>Verifying requests:</strong> we will confirm your identity by matching the email
+            address and details on your application. You may use an authorized agent; we will ask
+            for written permission signed by you and may ask you to verify your identity directly.
+          </li>
+          <li>
+            <strong>Response time:</strong> we respond within 45 days, and may extend this once by
+            another 45 days when reasonably necessary, in which case we will tell you why.
+          </li>
+          <li>
+            <strong>Non-discrimination:</strong> we will not deny you services, charge you a
+            different price or provide a different level of service because you exercised these
+            rights.
+          </li>
+        </ul>
 
         <h2 id="cookies">8. Cookies</h2>
         <p>
