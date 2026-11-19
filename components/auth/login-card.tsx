@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import { LoginForm } from "@/components/forms/login-form";
+import { PasswordLoginForm } from "@/components/forms/password-login-form";
 import { SITE } from "@/config/site";
 
 /** Standalone sign-in card (no public site header) for /admin and /catalog. */
@@ -11,6 +12,7 @@ export function LoginCard({
   next,
   error,
   wrongAccount,
+  allowPassword = false,
 }: {
   icon: LucideIcon;
   area: string;
@@ -19,6 +21,8 @@ export function LoginCard({
   next: string;
   error?: string;
   wrongAccount?: string | null;
+  /** Show email + password sign-in first (staff), with the emailed link as a fallback. */
+  allowPassword?: boolean;
 }) {
   return (
     <div className="bg-background flex min-h-dvh items-center justify-center px-4 py-16">
@@ -50,7 +54,17 @@ export function LoginCard({
             {wrongAccount}
           </p>
         )}
-        <LoginForm next={next} />
+        {allowPassword ? (
+          <>
+            <PasswordLoginForm next={next} />
+            <p className="text-muted my-5 text-center text-xs tracking-widest uppercase">
+              or get a sign-in link by email
+            </p>
+            <LoginForm next={next} />
+          </>
+        ) : (
+          <LoginForm next={next} />
+        )}
       </div>
     </div>
   );

@@ -8,6 +8,18 @@ vi.mock("@/lib/supabase/admin", () => ({
   PHOTO_BUCKET: "donor-photos",
 }));
 
+const sent: { to: string; subject: string; html: string }[] = [];
+vi.mock("@/lib/email", async () => {
+  const { render } = await import("@react-email/components");
+  return {
+    sendEmail: async (o: { to: string; subject: string; react: React.ReactElement }) => {
+      sent.push({ to: o.to, subject: o.subject, html: await render(o.react) });
+      return true;
+    },
+  };
+});
+process.env.ADMIN_NOTIFY_EMAIL = "admin@example.com";
+
 const { POST } = await import("@/app/api/apply/photos/route");
 
 const APP = "11111111-1111-4111-8111-111111111111";
@@ -23,9 +35,41 @@ function req(body: unknown) {
 }
 const photos = () => db.tables.photos ?? [];
 
+const APP_ROW = {
+  id: APP,
+  created_at: new Date().toISOString(),
+  donor_type: "egg",
+  first_name: "Jane",
+  last_name: "Doe",
+  email: "jane@example.com",
+  phone: "3125550199",
+  sms_consent: false,
+  date_of_birth: "2000-01-01",
+  country: "United States",
+  state: "IL",
+  zip: "60601",
+  region: null,
+  city: null,
+  postal_code: null,
+  education: "Bachelor's",
+  how_heard: null,
+  height_in: 66,
+  weight_lb: 130,
+  bmi: 21,
+  smoker: false,
+  previous_donation: false,
+  regular_cycles: true,
+  birth_control: "None",
+  eligible: true,
+  fail_reasons: [],
+  referral_code: null,
+  prescreen_details: {},
+};
+
 beforeEach(() => {
+  sent.length = 0;
   db.tables = {
-    applications: [{ id: APP, created_at: new Date().toISOString() }],
+    applications: [{ ...APP_ROW }],
     full_applications: [{ application_id: APP, completed_sections: ["background"] }],
   };
   db.objects.clear();
@@ -77,6 +121,25 @@ describe("POST /api/apply/photos", () => {
     const res = await POST(req({ applicationId: APP, paths: [vid] }));
     expect(await res.json()).toEqual({ ok: true, saved: 0 });
     expect(db.objects.has(vid)).toBe(false);
+  });
+
+  it("emails the admin once, with every answer and the photos", async () => {
+    await POST(req({ applicationId: APP, paths: [file(1), file(2), file(3)] }));
+    expect(sent).toHaveLength(1);
+    expect(sent[0]!.to).toBe("admin@example.com");
+    expect(sent[0]!.subject).toBe("New egg pre-screen: Jane D.");
+    for (const n of [1, 2, 3]) expect(sent[0]!.html).toContain(`https://cdn.test/${file(n)}?sig=1`);
+    expect(sent[0]!.html).toContain("jane@example.com");
+    // A second confirm (e.g. a retry) doesn't send it again.
+    await POST(req({ applicationId: APP, paths: [] }));
+    expect(sent).toHaveLength(1);
+  });
+
+  it("still emails the admin when every upload failed", async () => {
+    const res = await POST(req({ applicationId: APP, paths: [] }));
+    expect(await res.json()).toEqual({ ok: true, saved: 0 });
+    expect(sent).toHaveLength(1);
+    expect(sent[0]!.html).not.toContain("cdn.test");
   });
 
   it("does not save the same photo twice", async () => {
