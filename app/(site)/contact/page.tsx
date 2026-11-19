@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Mail, Phone } from "lucide-react";
+import { Mail } from "lucide-react";
 import { Section } from "@/components/marketing/section";
 import { ContactForm } from "@/components/forms/contact-form";
 import { SITE } from "@/config/site";
@@ -30,15 +30,6 @@ export default function ContactPage() {
               className="font-bold break-all underline decoration-2"
             >
               {SITE.contactEmail}
-            </a>
-          </p>
-          <p className="flex items-center gap-3">
-            <Phone className="size-5 shrink-0" aria-hidden />
-            <a
-              href={`tel:${SITE.contactPhone.replace(/\D/g, "")}`}
-              className="font-bold underline decoration-2"
-            >
-              {SITE.contactPhone}
             </a>
           </p>
           <p className="text-sm font-medium">{SITE.serviceArea}.</p>

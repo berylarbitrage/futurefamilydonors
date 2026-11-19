@@ -8,7 +8,6 @@ export const SITE = {
   brand: "Future Family Donors", // {{BRAND}}
   domain: "futurefamilydonors.com", // {{DOMAIN}}
   contactEmail: "info@futurefamilydonors.com", // {{CONTACT_EMAIL}} — TODO: confirm
-  contactPhone: "(000) 000-0000", // {{CONTACT_PHONE}}
   eggComp: "$8,000 – $35,000+ per cycle", // {{EGG_COMP}}
   /** Breakdown shown under the egg amount (home page card + egg landing page). */
   eggCompTiers: [

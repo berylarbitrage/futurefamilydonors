@@ -8,6 +8,9 @@ import { US_STATE_CODES } from "@/config/us-states";
 import { COUNTRIES, DEFAULT_COUNTRY, isUnitedStates } from "@/config/countries";
 import { ageOn, parseIsoDate } from "@/lib/dates";
 
+/** How many extra schools an applicant can add besides the first one. */
+export const MAX_OTHER_SCHOOLS = 4;
+
 export const HOW_HEARD = ["Google", "Instagram", "TikTok", "Facebook", "Friend", "Other"] as const;
 export const BIRTH_CONTROL = ["None", "Pill", "IUD", "Implant", "Shot", "Other"] as const;
 export const YES_NO = ["yes", "no"] as const;
@@ -64,6 +67,8 @@ export const step1Schema = z.object({
   postalCode: optText(20),
   education: z.enum(EDUCATION_LEVELS, { error: "Please select your education level" }),
   school: z.string().trim().min(1, "Please enter your school name").max(120),
+  /** Additional schools (optional, blank entries are ignored). */
+  otherSchools: z.array(z.string().trim().max(120)).max(MAX_OTHER_SCHOOLS).optional(),
   howHeard: z.enum(HOW_HEARD).optional().or(z.literal("")),
 });
 

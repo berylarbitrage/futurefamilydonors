@@ -1,6 +1,5 @@
 import { Button, Heading, Text } from "@react-email/components";
 import { EmailLayout, button } from "./layout";
-import { SITE } from "@/config/site";
 
 /** A message written by a coordinator in the admin dashboard. */
 export default function CoordinatorMessageEmail({
@@ -28,9 +27,7 @@ export default function CoordinatorMessageEmail({
           Open My Applicant Portal
         </Button>
       )}
-      <Text style={{ fontSize: 13, color: "#6A5C77" }}>
-        You can reply directly to this email, or call us at {SITE.contactPhone}.
-      </Text>
+      <Text style={{ fontSize: 13, color: "#6A5C77" }}>You can reply directly to this email.</Text>
     </EmailLayout>
   );
 }

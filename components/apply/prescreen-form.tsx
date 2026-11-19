@@ -6,12 +6,13 @@ import { useEffect, useRef, useState } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
-import { ArrowLeft, Clock, Lock } from "lucide-react";
+import { ArrowLeft, Clock, Lock, Plus, X } from "lucide-react";
 import {
   applicationSchema,
   stepSchemas,
   BIRTH_CONTROL,
   HOW_HEARD,
+  MAX_OTHER_SCHOOLS,
   conditionalIssues,
   type eggApplicationSchema,
   type spermApplicationSchema,
@@ -49,6 +50,7 @@ function stepFields(type: DonorType): FieldName[][] {
       "postalCode",
       "education",
       "school",
+      "otherSchools",
       "howHeard",
     ],
     [
@@ -107,6 +109,7 @@ export function PrescreenForm({
       privacyConsent: false as unknown as true,
       ref: "",
       school: "",
+      otherSchools: [],
       howHeard: "",
       country: DEFAULT_COUNTRY,
     },
@@ -193,6 +196,10 @@ export function PrescreenForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch, step, storageKey, type]);
 
+  const otherSchools = (watch("otherSchools") ?? []) as string[];
+  const setOtherSchools = (list: string[]) =>
+    form.setValue("otherSchools", list, { shouldDirty: true });
+
   const goTo = (s: number) => {
     setStep(s);
     try {
@@ -230,7 +237,7 @@ export function PrescreenForm({
     goTo(step + 1);
   };
 
-  const contactFallback = `If this keeps happening, email ${SITE.contactEmail} or call ${SITE.contactPhone} and we'll help you apply.`;
+  const contactFallback = `If this keeps happening, email ${SITE.contactEmail} and we'll help you apply.`;
 
   const onSubmit = async (values: FormValues) => {
     setServerError(null);
@@ -471,7 +478,7 @@ export function PrescreenForm({
             <Field
               id="school"
               label="School name"
-              hint="The college or university you attend now, or the last one you attended."
+              hint="The college or university you attend now, or the last one you attended. Add more below if you've attended other schools."
               required
               error={err("school")}
             >
@@ -483,6 +490,44 @@ export function PrescreenForm({
                 {...register("school")}
               />
             </Field>
+            {otherSchools.map((value, i) => (
+              <div key={i} className="flex items-end gap-2">
+                <Field
+                  id={`otherSchools-${i}`}
+                  label={`Another school (${i + 2})`}
+                  className="flex-1"
+                >
+                  <Input
+                    id={`otherSchools-${i}`}
+                    autoComplete="off"
+                    maxLength={120}
+                    value={value}
+                    onChange={(e) =>
+                      setOtherSchools(otherSchools.map((v, j) => (j === i ? e.target.value : v)))
+                    }
+                  />
+                </Field>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label={`Remove school ${i + 2}`}
+                  onClick={() => setOtherSchools(otherSchools.filter((_, j) => j !== i))}
+                >
+                  <X aria-hidden />
+                </Button>
+              </div>
+            ))}
+            {otherSchools.length < MAX_OTHER_SCHOOLS && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setOtherSchools([...otherSchools, ""])}
+              >
+                <Plus aria-hidden /> Add another school
+              </Button>
+            )}
             <Field id="howHeard" label="How did you hear about us?" error={err("howHeard")}>
               <NativeSelect id="howHeard" {...register("howHeard")}>
                 <option value="">Prefer not to say</option>

@@ -8,7 +8,6 @@ export function organizationJsonLd() {
     name: SITE.brand,
     url: siteUrl(),
     email: SITE.contactEmail,
-    telephone: SITE.contactPhone,
     areaServed: [{ "@type": "Country", name: "United States" }, "Worldwide"],
   };
 }

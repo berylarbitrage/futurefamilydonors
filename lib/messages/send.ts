@@ -18,7 +18,6 @@ export function templateVars(app: MessageTarget): Record<string, string> {
   return {
     firstName: app.first_name,
     brand: SITE.brand,
-    phone: SITE.contactPhone,
     portalUrl: app.user_id ? siteUrl("/portal") : siteUrl("/portal/login"),
   };
 }

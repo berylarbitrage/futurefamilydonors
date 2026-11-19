@@ -17,12 +17,6 @@ export function Footer() {
             <a className={`${linkCls} py-2 underline`} href={`mailto:${SITE.contactEmail}`}>
               {SITE.contactEmail}
             </a>
-            <a
-              className={`${linkCls} py-2 underline`}
-              href={`tel:${SITE.contactPhone.replace(/\D/g, "")}`}
-            >
-              {SITE.contactPhone}
-            </a>
           </p>
           <p className="bg-mint border-ink inline-block rounded-lg border-2 px-2.5 py-1 text-sm font-bold">
             {SITE.serviceArea}

@@ -123,7 +123,8 @@ export async function POST(req: Request) {
   const yes = (v: string | undefined) => (v === undefined ? null : v === "yes");
   const isEgg = donorType === "egg";
   const us = isUnitedStates(d.country);
-  const prescreenDetails: Record<string, unknown> = { school: d.school };
+  const schools = [d.school, ...(d.otherSchools ?? [])].map((s) => s.trim()).filter(Boolean);
+  const prescreenDetails: Record<string, unknown> = { schools };
   if (d.previousDonation === "yes") {
     prescreenDetails.previousDonation = {
       count: d.prevDonationCount ?? null,

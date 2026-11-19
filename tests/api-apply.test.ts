@@ -101,6 +101,19 @@ beforeEach(() => {
 
 // ---- Tests ---------------------------------------------------------------
 describe("POST /api/apply", () => {
+  it("stores every school the applicant lists, skipping blank extra rows", async () => {
+    const res = await POST(
+      req({
+        donorType: "egg",
+        data: eggData({ otherSchools: ["Harvard University", "  ", "MIT"] }),
+      }),
+    );
+    expect(res.status).toBe(200);
+    expect(apps()[0]!.prescreen_details).toEqual({
+      schools: ["University of Illinois", "Harvard University", "MIT"],
+    });
+  });
+
   it("stores an eligible application and sends eligible + admin emails", async () => {
     const res = await POST(req({ donorType: "egg", data: eggData() }));
     expect(res.status).toBe(200);
@@ -207,7 +220,7 @@ describe("POST /api/apply", () => {
     );
     expect(ok.status).toBe(200);
     expect(apps()[0]!.prescreen_details).toEqual({
-      school: "University of Illinois",
+      schools: ["University of Illinois"],
       previousDonation: {
         count: 2,
         when: "2022 and 2024",
