@@ -113,7 +113,7 @@ export function FullApplication({
       </aside>
 
       <section
-        className="border-ink min-w-0 rounded-[16px] border-3 bg-white p-5 shadow-[6px_6px_0_0_#111] sm:p-8"
+        className="min-w-0 border-ink min-w-0 rounded-[16px] border-3 bg-white p-5 shadow-[6px_6px_0_0_#111] sm:p-8"
         aria-labelledby="section-heading"
       >
         <h2 id="section-heading" tabIndex={-1} className="text-2xl font-extrabold outline-none">
