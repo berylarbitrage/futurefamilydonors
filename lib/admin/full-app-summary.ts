@@ -1,5 +1,4 @@
-import { formatValue } from "@/components/admin/field-value";
-import { FORM_SECTIONS, isFieldVisible, sectionFields, type FormSectionId } from "@/lib/full-app";
+import { displayFields, formatAnswer, FORM_SECTIONS, type FormSectionId } from "@/lib/full-app";
 import type { SummarySection } from "@/lib/admin/prescreen-summary";
 
 /**
@@ -15,12 +14,10 @@ export function fullAppSummary(
     const values = sections[s.id] ?? {};
     return {
       title: s.title,
-      rows: sectionFields(s.id as FormSectionId, donorType)
-        .filter((f) => isFieldVisible(f, values))
-        .map((f): [string, string] => [
-          f.showIf ? `↳ ${f.label}` : f.label,
-          formatValue(values[f.name]),
-        ]),
+      rows: displayFields(s.id as FormSectionId, donorType, values).map((f): [string, string] => [
+        f.showIf ? `↳ ${f.label}` : f.label,
+        formatAnswer(f, values[f.name]),
+      ]),
     };
   }).filter((s) => s.rows.length > 0);
   if (signature?.name) {

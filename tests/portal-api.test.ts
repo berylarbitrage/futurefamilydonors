@@ -62,6 +62,16 @@ const background = {
   hobbies: "Hiking",
   personality: "Kind",
   whyDonate: "To help",
+  placeOfBirth: "Austin, TX",
+  maritalStatus: "Single",
+  race: ["Asian"],
+  maternalAncestry: "Chinese",
+  paternalAncestry: "Korean",
+  religion: "None",
+  upbringing: "Two parents, one sister",
+  talents: "Piano",
+  messageToParents: "Wishing you joy",
+  relationshipPreference: "Anonymous",
 };
 
 beforeEach(() => {
@@ -175,7 +185,14 @@ describe("portal submit", () => {
       {
         application_id: "app-a",
         sections: {},
-        completed_sections: ["background", "appearance", "medical", "family", "reproductive"],
+        completed_sections: [
+          "background",
+          "education",
+          "appearance",
+          "medical",
+          "family",
+          "reproductive",
+        ],
         submitted_at: null,
       },
     ];
@@ -214,7 +231,14 @@ describe("portal submit", () => {
       {
         application_id: "app-a",
         sections: { background: background },
-        completed_sections: ["background", "appearance", "medical", "family", "reproductive"],
+        completed_sections: [
+          "background",
+          "education",
+          "appearance",
+          "medical",
+          "family",
+          "reproductive",
+        ],
         submitted_at: null,
       },
     ];
@@ -247,7 +271,14 @@ describe("portal submit", () => {
       {
         application_id: "app-a",
         sections: { background: { occupation: "Nurse" } },
-        completed_sections: ["background", "appearance", "medical", "family", "reproductive"],
+        completed_sections: [
+          "background",
+          "education",
+          "appearance",
+          "medical",
+          "family",
+          "reproductive",
+        ],
         submitted_at: null,
       },
     ];

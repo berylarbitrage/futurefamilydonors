@@ -7,6 +7,7 @@ import { createHash } from "node:crypto";
 import { ageOn } from "@/lib/dates";
 import {
   FORM_SECTION_IDS,
+  formatAnswer,
   SECTION_TITLES,
   sectionFields,
   type FormSectionId,
@@ -43,6 +44,11 @@ export interface CatalogDonor {
   sections: { id: FormSectionId; title: string; items: [string, unknown][] }[];
 }
 
+const gridText = (f: Parameters<typeof formatAnswer>[0], v: unknown) => {
+  const t = formatAnswer(f, v);
+  return t === "–" ? undefined : t;
+};
+
 /** Stable public code, e.g. "E-3F9A2C". Not reversible to the application id. */
 export function donorCode(id: string, type: DonorType, salt = ""): string {
   const h = createHash("sha256").update(`${salt}:${id}`).digest("hex").slice(0, 6).toUpperCase();
@@ -71,9 +77,16 @@ export function toCatalogDonor(r: CatalogSourceRow, now: Date, salt = ""): Catal
     sections: CATALOG_SECTIONS.map((id) => ({
       id,
       title: SECTION_TITLES[id],
-      items: sectionFields(id, r.donor_type).map(
-        (f) => [f.label, s[id]?.[f.name]] as [string, unknown],
-      ),
+      // Answers that could identify the donor (school, birthplace) never leave the server.
+      items: sectionFields(id, r.donor_type)
+        .filter((f) => !f.identifying)
+        .map(
+          (f) =>
+            [f.label, f.kind === "grid" ? gridText(f, s[id]?.[f.name]) : s[id]?.[f.name]] as [
+              string,
+              unknown,
+            ],
+        ),
     })).filter((sec) => sec.items.some(([, v]) => v !== undefined && v !== null && v !== "")),
   };
 }
