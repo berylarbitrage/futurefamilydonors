@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ImagePlus, Video, X } from "lucide-react";
 import { PHOTO_LIMITS, VIDEO_LIMITS } from "@/lib/full-app";
 import { compressImage } from "@/lib/compress-image";
+import { HEIC_HINT, withKnownType } from "@/lib/file-type";
 
 /** Photos are shrunk in the browser, so a bigger original is fine to pick. */
 const RAW_PHOTO_MAX_BYTES = 25 * 1024 * 1024;
@@ -33,9 +34,10 @@ export function PrescreenPhotos({
   const videoUrl = useMemo(() => (video ? URL.createObjectURL(video) : null), [video]);
   useEffect(() => () => void (videoUrl && URL.revokeObjectURL(videoUrl)), [videoUrl]);
 
-  const pickVideo = (f: File | undefined) => {
-    if (!f) return;
+  const pickVideo = async (picked: File | undefined) => {
+    if (!picked) return;
     onError(null);
+    const f = await withKnownType(picked);
     if (!VIDEO_LIMITS.mimeTypes.includes(f.type as "video/mp4"))
       return onError("Please choose an MP4, MOV or WebM video.");
     if (f.size > VIDEO_LIMITS.maxBytes) return onError("The video must be 50 MB or smaller.");
@@ -50,7 +52,12 @@ export function PrescreenPhotos({
     const next = [...files];
     setPreparing(true);
     try {
-      for (const raw of list) {
+      for (const picked of list) {
+        const raw = await withKnownType(picked);
+        if (raw.type === "image/heic" || raw.type === "image/heif") {
+          onError(HEIC_HINT);
+          continue;
+        }
         if (!PHOTO_LIMITS.mimeTypes.includes(raw.type as "image/jpeg")) {
           onError("Please choose JPG or PNG images.");
           continue;

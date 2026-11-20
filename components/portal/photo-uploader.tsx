@@ -6,6 +6,7 @@ import { CheckCircle2, Mic, Trash2, Upload, Video } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { AUDIO_LIMITS, isPhotoKind, PHOTO_LIMITS, VIDEO_LIMITS } from "@/lib/full-app";
 import { Button } from "@/components/ui/button";
+import { HEIC_HINT, withKnownType } from "@/lib/file-type";
 
 type Kind = "childhood" | "recent" | "video" | "audio";
 
@@ -55,9 +56,11 @@ export function PhotoUploader({
   const remaining = PHOTO_LIMITS.maxCount - photos.length;
   const photosDone = photos.length >= PHOTO_LIMITS.minCount;
 
-  const upload = async (kind: Kind, file: File) => {
+  const upload = async (kind: Kind, picked: File) => {
     setError(null);
     const rule = RULES[kind];
+    const file = await withKnownType(picked);
+    if (file.type === "image/heic" || file.type === "image/heif") return setError(HEIC_HINT);
     if (!rule.types.includes(file.type) || file.size > rule.maxBytes) return setError(rule.error);
     setBusy(kind);
     try {
