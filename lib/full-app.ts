@@ -135,7 +135,7 @@ export const FORM_SECTIONS: FormSectionDef[] = [
         label: "Eye color",
         kind: "select",
         required: true,
-        options: ["Brown", "Hazel", "Green", "Blue", "Gray", "Other"],
+        options: ["Black", "Brown", "Hazel", "Green", "Blue", "Gray", "Other"],
       },
       {
         name: "hairColor",
