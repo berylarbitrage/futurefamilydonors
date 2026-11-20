@@ -796,17 +796,20 @@ export function PrescreenForm({
             />
             {donatedBefore && (
               <div className="border-ink bg-sun-soft space-y-5 rounded-[12px] border-3 border-dashed p-4">
-                <p className="text-sm font-bold">Tell us about your previous donations</p>
+                <p className="text-sm font-bold">
+                  Tell us about your previous {type === "egg" ? "egg" : "sperm"} donations
+                </p>
                 <fieldset className="space-y-3" aria-describedby="prevDonations-hint">
                   <legend className="text-sm font-bold">
                     {type === "egg"
-                      ? "When was each donation, and about how many eggs were retrieved?"
-                      : "When was each donation?"}{" "}
+                      ? "When was each egg donation, and about how many eggs were retrieved?"
+                      : "When was each sperm donation?"}{" "}
                     <span className="text-destructive">*</span>
                   </legend>
                   <p id="prevDonations-hint" className="text-muted -mt-1 text-xs">
-                    Add one row per donation and pick the date from the calendar. If you don&apos;t
-                    remember the exact day, pick a date close to it.
+                    Add one row per {type === "egg" ? "egg" : "sperm"} donation and pick the date
+                    from the calendar. If you don&apos;t remember the exact day, pick a date close
+                    to it.
                     {type === "egg" && " For eggs, an estimate is fine, or write 'Not sure'."}
                   </p>
                   {prevDonations.map((row, i) => (
@@ -816,7 +819,7 @@ export function PrescreenForm({
                       >
                         <Field
                           id={`prevDonations-${i}`}
-                          label={`Donation ${i + 1}`}
+                          label={`${type === "egg" ? "Egg" : "Sperm"} donation ${i + 1}`}
                           error={
                             row.date && row.date > todayIso
                               ? "This date is in the future. Please pick a past date."
@@ -865,10 +868,12 @@ export function PrescreenForm({
                       size="sm"
                       onClick={() => setPrevDonations([...prevDonations, { date: "", eggs: "" }])}
                     >
-                      <Plus aria-hidden /> Add another donation
+                      <Plus aria-hidden /> Add another {type === "egg" ? "egg" : "sperm"} donation
                     </Button>
                   )}
-                  <p className="text-sm font-semibold">Total donations: {prevDonations.length}</p>
+                  <p className="text-sm font-semibold">
+                    Total {type === "egg" ? "egg" : "sperm"} donations: {prevDonations.length}
+                  </p>
                   {err("prevDonations") && (
                     <p id="prevDonations-error" role="alert" className="text-destructive text-sm">
                       {err("prevDonations")}

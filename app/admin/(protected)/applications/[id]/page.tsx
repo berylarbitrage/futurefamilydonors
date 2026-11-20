@@ -12,10 +12,10 @@ import { docTypeLabel } from "@/lib/documents";
 import { FAIL_REASON_LABELS, type FailReason } from "@/lib/eligibility";
 import {
   completionPercent,
+  displayFields,
+  formatAnswer,
   FORM_SECTIONS,
-  isFieldVisible,
   isPhotoKind,
-  sectionFields,
   SECTION_TITLES,
 } from "@/lib/full-app";
 import { Card } from "@/components/ui/card";
@@ -317,9 +317,10 @@ export default async function ApplicationDetailPage({
                   )}
                 </h2>
                 <DefList
-                  items={sectionFields(s.id, app.donor_type)
-                    .filter((f) => isFieldVisible(f, sections[s.id] ?? {}))
-                    .map((f) => [f.showIf ? `↳ ${f.label}` : f.label, sections[s.id]?.[f.name]])}
+                  items={displayFields(s.id, app.donor_type, sections[s.id] ?? {}).map((f) => [
+                    f.showIf ? `↳ ${f.label}` : f.label,
+                    formatAnswer(f, sections[s.id]?.[f.name]),
+                  ])}
                 />
               </Card>
             ))}

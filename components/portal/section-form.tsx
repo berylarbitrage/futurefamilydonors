@@ -24,12 +24,27 @@ const AUTOSAVE_MS = 1500;
 const toNumber = (v: unknown) =>
   v === "" || v === null || v === undefined ? undefined : Number(v);
 
+/** Keep only filled-in cells; undefined when nothing was filled in. */
+function cleanGrid(v: unknown): Values | undefined {
+  if (!v || typeof v !== "object") return undefined;
+  const out: Values = {};
+  for (const [row, cells] of Object.entries(v as Record<string, Values>)) {
+    if (!cells || typeof cells !== "object") continue;
+    const kept: Values = {};
+    for (const [k, x] of Object.entries(cells))
+      if (typeof x === "string" && x.trim() !== "") kept[k] = x;
+    if (Object.keys(kept).length) out[row] = kept;
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
 /** Drop empty values and hidden follow-ups so a draft passes the lenient schema. */
 function clean(values: Values, fields: FieldDef[]): Values {
   const out: Values = {};
   for (const f of fields) {
     let v = values[f.name];
     if (f.kind === "multi") v = Array.isArray(v) ? v : v ? [v] : [];
+    if (f.kind === "grid") v = cleanGrid(v);
     if (v === "" || v === undefined || v === null || (typeof v === "number" && Number.isNaN(v)))
       continue;
     out[f.name] = v;
@@ -151,6 +166,11 @@ export function SectionForm({
   }, [watch, getValues, save, readOnly]);
 
   const e = errors as Record<string, { message?: string } | undefined>;
+  const cellError = (path: string): string | undefined => {
+    let cur: unknown = errors;
+    for (const part of path.split(".")) cur = (cur as Record<string, unknown> | undefined)?.[part];
+    return (cur as { message?: string } | undefined)?.message;
+  };
   const visible = clean(values, fields);
 
   return (
@@ -191,23 +211,83 @@ export function SectionForm({
                   )}
                 >
                   {opts.map((o) => (
-                    <label
-                      key={o}
-                      className="border-ink bg-card has-[:checked]:bg-sun has-[:focus-visible]:outline-ring flex min-h-12 cursor-pointer items-center gap-2 rounded-[10px] border-3 px-3 text-sm font-semibold has-[:checked]:shadow-[3px_3px_0_0_#111] has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2"
-                    >
+                    // peer-checked (not :has) so the selected state also shows on older phone browsers
+                    <label key={o} className="relative block cursor-pointer">
                       <input
                         type={f.kind === "yesno" ? "radio" : "checkbox"}
                         value={o}
-                        className="accent-[#111]"
+                        className="peer absolute top-1/2 left-3 -translate-y-1/2 accent-[#111]"
                         {...register(f.name)}
                       />
-                      {o}
+                      <span className="border-ink bg-card peer-checked:bg-sun peer-focus-visible:outline-ring flex min-h-12 items-center rounded-[10px] border-3 py-2 pr-3 pl-9 text-sm font-semibold peer-checked:shadow-[3px_3px_0_0_#111] peer-focus-visible:outline-2">
+                        {o}
+                      </span>
                     </label>
                   ))}
                 </div>
                 {err && (
                   <p id={`${f.name}-error`} role="alert" className="text-destructive text-sm">
                     {err}
+                  </p>
+                )}
+              </fieldset>
+            );
+          } else if (f.kind === "grid") {
+            const groupErr = typeof err === "string" ? err : undefined;
+            control = (
+              <fieldset
+                className="space-y-3"
+                aria-describedby={groupErr ? `${f.name}-error` : undefined}
+              >
+                <legend className="text-sm font-medium">
+                  {f.label}
+                  {f.required && <span className="text-destructive"> *</span>}
+                </legend>
+                {f.hint && <p className="text-muted text-xs">{f.hint}</p>}
+                {f.rows!.map((r) => (
+                  <div key={r.key} className="border-ink bg-card rounded-[10px] border-3 p-4">
+                    <p className="mb-3 text-sm font-semibold">
+                      {r.label}
+                      {f.required && r.required && <span className="text-destructive"> *</span>}
+                    </p>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {f.columns!.map((c) => {
+                        const path = `${f.name}.${r.key}.${c.key}`;
+                        const id = path.replace(/\./g, "-");
+                        const cErr = cellError(path);
+                        const cInv = {
+                          "aria-invalid": !!cErr,
+                          "aria-describedby": cErr ? `${id}-error` : undefined,
+                        };
+                        return (
+                          <Field key={c.key} id={id} label={c.label} error={cErr}>
+                            {c.kind === "select" ? (
+                              <NativeSelect id={id} defaultValue="" {...cInv} {...register(path)}>
+                                <option value="">Select</option>
+                                {c.options!.map((o) => (
+                                  <option key={o} value={o}>
+                                    {o}
+                                  </option>
+                                ))}
+                              </NativeSelect>
+                            ) : (
+                              <Input
+                                id={id}
+                                maxLength={c.max}
+                                placeholder={c.placeholder}
+                                {...cInv}
+                                {...register(path)}
+                              />
+                            )}
+                          </Field>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+                {groupErr && (
+                  <p id={`${f.name}-error`} role="alert" className="text-destructive text-sm">
+                    {groupErr}
                   </p>
                 )}
               </fieldset>

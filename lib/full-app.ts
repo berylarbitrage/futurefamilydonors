@@ -5,7 +5,23 @@
 import { z } from "zod";
 import type { DonorType } from "@/config/eligibility";
 
-export type FieldKind = "text" | "textarea" | "select" | "yesno" | "multi" | "number";
+export type FieldKind = "text" | "textarea" | "select" | "yesno" | "multi" | "number" | "grid";
+
+/** One column of a "grid" question (e.g. Height, Eye color). */
+export interface GridColumn {
+  key: string;
+  label: string;
+  kind: "text" | "select";
+  options?: readonly string[];
+  max?: number;
+  placeholder?: string;
+}
+/** One row of a "grid" question (e.g. Mother). Required rows need every column. */
+export interface GridRow {
+  key: string;
+  label: string;
+  required?: boolean;
+}
 
 export interface FieldDef {
   name: string;
@@ -19,12 +35,23 @@ export interface FieldDef {
   onlyFor?: DonorType;
   /** Follow-up question: only shown (and only required) when this condition holds. */
   showIf?: ShowIf;
+  /** "grid" questions: one row per person, one column per detail. */
+  rows?: readonly GridRow[];
+  columns?: readonly GridColumn[];
+  /** Could identify the donor (school, birthplace): never shown in the anonymous catalog. */
+  identifying?: boolean;
+  /**
+   * No longer asked. Kept so answers given before the change still show for
+   * staff; not rendered, validated or required.
+   */
+  retired?: boolean;
 }
 
 export type ShowIf =
   | { field: string; equals: string } // e.g. a Yes/No answer is "Yes"
   | { field: string; anyExcept: string } // multi-select has an option other than "None of these"
-  | { field: string; gt: number }; // number answer is greater than N
+  | { field: string; gt: number } // number answer is greater than N
+  | { fields: readonly string[]; anyExcept: string }; // any of these multi-selects has a real answer
 
 export interface FormSectionDef {
   id: FormSectionId;
@@ -35,6 +62,7 @@ export interface FormSectionDef {
 
 export const FORM_SECTION_IDS = [
   "background",
+  "education",
   "appearance",
   "medical",
   "family",
@@ -46,6 +74,7 @@ export type SectionId = (typeof ALL_SECTION_IDS)[number];
 
 export const SECTION_TITLES: Record<SectionId, string> = {
   background: "Personal background",
+  education: "Education & career",
   appearance: "Physical characteristics",
   medical: "Personal medical history",
   family: "Family medical history",
@@ -89,6 +118,232 @@ const FAMILY_CONDITIONS = [
   "None of these",
 ] as const;
 
+const EYE_COLORS = ["Black", "Brown", "Hazel", "Green", "Blue", "Gray", "Other"] as const;
+const HAIR_COLORS = [
+  "Black",
+  "Dark brown",
+  "Light brown",
+  "Blonde",
+  "Red",
+  "Gray",
+  "Other",
+] as const;
+const RACES = [
+  "White / Caucasian",
+  "Hispanic / Latino",
+  "Black / African American",
+  "Asian",
+  "American Indian or Alaska Native",
+  "Native Hawaiian or Other Pacific Islander",
+  "Middle Eastern / North African",
+  "Other",
+] as const;
+const EDUCATION_LEVELS = [
+  "Less than high school",
+  "High school / GED",
+  "Some college",
+  "Associate degree",
+  "Bachelor's degree",
+  "Master's degree",
+  "Doctorate / professional degree",
+  "Trade / vocational",
+  "Unknown",
+] as const;
+
+/** Physical traits, ethnicity, education and work of each close relative. */
+const RELATIVE_COLUMNS: readonly GridColumn[] = [
+  {
+    key: "age",
+    label: "Age (or age at death)",
+    kind: "text",
+    max: 40,
+    placeholder: "e.g. 58 / died at 80",
+  },
+  { key: "height", label: "Height", kind: "text", max: 20, placeholder: "e.g. 5'6\"" },
+  { key: "eyeColor", label: "Eye color", kind: "select", options: [...EYE_COLORS, "Unknown"] },
+  {
+    key: "hairColor",
+    label: "Natural hair color",
+    kind: "select",
+    options: [...HAIR_COLORS, "Unknown"],
+  },
+  {
+    key: "ethnicity",
+    label: "Ethnicity",
+    kind: "text",
+    max: 80,
+    placeholder: "e.g. Irish, Mexican, Chinese",
+  },
+  { key: "education", label: "Education", kind: "select", options: EDUCATION_LEVELS },
+  {
+    key: "occupation",
+    label: "Occupation",
+    kind: "text",
+    max: 100,
+    placeholder: "e.g. Teacher, retired nurse",
+  },
+];
+const SIBLING_COLUMNS: readonly GridColumn[] = [
+  {
+    key: "relation",
+    label: "Relation",
+    kind: "select",
+    options: ["Brother", "Sister", "Half-brother", "Half-sister"],
+  },
+  ...RELATIVE_COLUMNS,
+];
+
+const FAMILY_CHECKLIST_NONE = NONE;
+const famChecklist = (name: string, label: string, options: string[]): FieldDef => ({
+  name,
+  label,
+  kind: "multi",
+  required: true,
+  options: [...options, FAMILY_CHECKLIST_NONE],
+});
+const FAMILY_CHECKLIST: FieldDef[] = [
+  famChecklist("famCancer", "Cancer", [
+    "Breast",
+    "Colon or intestinal",
+    "Lung",
+    "Ovarian or uterine",
+    "Prostate or testicular",
+    "Skin (melanoma)",
+    "Stomach",
+    "Thyroid",
+    "Blood (e.g. leukemia, lymphoma)",
+    "Other cancer",
+  ]),
+  famChecklist("famHeart", "Heart and circulation", [
+    "Stroke",
+    "Heart attack",
+    "Congenital heart disease / heart defect",
+    "Hardening of the arteries",
+    "High blood pressure",
+    "High cholesterol",
+    "Other heart condition",
+  ]),
+  famChecklist("famBlood", "Blood and immune system", [
+    "Anemia",
+    "Sickle cell anemia or trait",
+    "Thalassemia",
+    "Factor V Leiden / blood clots",
+    "Hemophilia, von Willebrand or other bleeding disorder",
+    "Immune deficiency",
+    "HIV",
+    "Other blood disorder",
+  ]),
+  famChecklist("famRespiratory", "Lungs and breathing", [
+    "Asthma",
+    "Hay fever / severe allergies",
+    "Emphysema / COPD",
+    "Cystic fibrosis",
+    "Alpha-1 antitrypsin deficiency",
+    "Other lung disease",
+  ]),
+  famChecklist("famDigestive", "Digestive system and liver", [
+    "Stomach or duodenal ulcer",
+    "Gallstones",
+    "Hepatitis A, B or C",
+    "Cirrhosis or other liver disease",
+    "Crohn's disease / ulcerative colitis",
+    "Celiac disease",
+    "Multiple colon polyps",
+    "Pyloric stenosis",
+    "Other digestive problem",
+  ]),
+  famChecklist("famMetabolic", "Hormones and metabolism", [
+    "Type 1 / childhood diabetes",
+    "Type 2 diabetes",
+    "Thyroid disorder / goiter",
+    "Hypoglycemia",
+    "Adrenal disorder",
+    "PKU or other inherited metabolic disorder",
+    "Severe obesity",
+    "Dwarfism / growth disorder",
+    "Other hormone or metabolic disorder",
+  ]),
+  famChecklist("famNeuro", "Brain and nervous system", [
+    "Migraines",
+    "Epilepsy / seizures",
+    "ADD / ADHD",
+    "Autism spectrum disorder",
+    "Intellectual disability",
+    "Alzheimer's or dementia before age 60",
+    "Parkinson's disease",
+    "Multiple sclerosis",
+    "Cerebral palsy",
+    "Huntington's disease",
+    "Tourette syndrome",
+    "Neurofibromatosis / tuberous sclerosis",
+    "Hydrocephalus",
+    "Scoliosis",
+    "Other nervous system disorder",
+  ]),
+  famChecklist("famMental", "Mental health", [
+    "Anxiety / panic attacks",
+    "Depression",
+    "Bipolar disorder",
+    "Schizophrenia",
+    "Eating disorder",
+    "Obsessive-compulsive disorder",
+    "Suicide or suicide attempt",
+    "Other condition that needed treatment",
+  ]),
+  famChecklist("famMuscleBone", "Muscles, bones and joints", [
+    "Muscular dystrophy",
+    "Spinal muscular atrophy",
+    "Achondroplasia",
+    "Brittle bone disease (osteogenesis imperfecta)",
+    "Marfan syndrome",
+    "Rheumatoid or juvenile arthritis",
+    "Lupus",
+    "Osteoporosis before age 50",
+    "Gout",
+    "Myasthenia gravis",
+    "Other muscle, bone or joint disorder",
+  ]),
+  famChecklist("famSenses", "Eyes, ears and senses", [
+    "Deafness / hearing loss before age 60",
+    "Blindness",
+    "Cataracts before age 50",
+    "Glaucoma",
+    "Color blindness",
+    "Severe nearsightedness",
+    "Retinitis pigmentosa",
+    "Retinoblastoma",
+    "Other eye, ear or sensory disorder",
+  ]),
+  famChecklist("famSkin", "Skin", [
+    "Severe acne",
+    "Eczema",
+    "Psoriasis",
+    "Albinism",
+    "Pigmentation disorder (e.g. vitiligo)",
+    "More than 5 coffee-colored spots",
+    "Other skin disorder",
+  ]),
+  famChecklist("famBirthDefects", "Birth defects", [
+    "Cleft lip or palate",
+    "Club foot",
+    "Congenital hip problem",
+    "Heart defect at birth",
+    "Spina bifida / neural tube defect",
+    "Microcephaly",
+    "Hearing problem from birth",
+    "Other birth defect",
+  ]),
+  famChecklist("famOther", "Other", [
+    "Down syndrome",
+    "Fragile X, Turner or Klinefelter syndrome",
+    "Tay-Sachs or other inherited disorder",
+    "Alcoholism",
+    "Drug addiction",
+    "Early failure of any organ",
+    "Any other condition not listed here",
+  ]),
+];
+
 export const FORM_SECTIONS: FormSectionDef[] = [
   {
     id: "background",
@@ -123,6 +378,163 @@ export const FORM_SECTIONS: FormSectionDef[] = [
         required: true,
         max: 1500,
       },
+      {
+        name: "placeOfBirth",
+        label: "Place of birth (city, state / country)",
+        kind: "text",
+        required: true,
+        max: 120,
+        identifying: true,
+      },
+      {
+        name: "maritalStatus",
+        label: "Marital status",
+        kind: "select",
+        required: true,
+        options: ["Single", "In a relationship", "Married", "Divorced", "Separated", "Widowed"],
+      },
+      {
+        name: "race",
+        label: "Race (choose all that apply)",
+        kind: "multi",
+        required: true,
+        options: RACES,
+      },
+      {
+        name: "maternalAncestry",
+        label: "Ethnic ancestry on your mother's side",
+        hint: "Your family's roots, e.g. Irish, Italian, Mexican, Korean — not your nationality or where you were born.",
+        kind: "text",
+        required: true,
+        max: 200,
+      },
+      {
+        name: "paternalAncestry",
+        label: "Ethnic ancestry on your father's side",
+        kind: "text",
+        required: true,
+        max: 200,
+      },
+      {
+        name: "religion",
+        label: "Religion or spirituality",
+        kind: "select",
+        required: true,
+        options: [
+          "None",
+          "Christian",
+          "Catholic",
+          "Jewish",
+          "Muslim",
+          "Hindu",
+          "Buddhist",
+          "Spiritual, not religious",
+          "Other",
+          "Prefer not to say",
+        ],
+      },
+      {
+        name: "religionRole",
+        label: "How does religion or spirituality play a role in your family? (optional)",
+        kind: "textarea",
+        max: 1000,
+      },
+      {
+        name: "upbringing",
+        label: "What kind of household did you grow up in?",
+        hint: "For example: who raised you, brothers and sisters, where you grew up, family values.",
+        kind: "textarea",
+        required: true,
+        max: 1500,
+      },
+      {
+        name: "talents",
+        label: "Special skills, talents or abilities",
+        hint: "Music, sports, languages, art, cooking, coding — anything you're good at.",
+        kind: "textarea",
+        required: true,
+        max: 1500,
+      },
+      {
+        name: "messageToParents",
+        label:
+          "What kind of family would you like to help, and what would you like to say to the intended parents?",
+        kind: "textarea",
+        required: true,
+        max: 2000,
+      },
+      {
+        name: "relationshipPreference",
+        label: "What kind of relationship with the family would you prefer?",
+        hint: "Anonymous: no identifying information shared. Semi-open: limited contact through us. Open: willing to share identity or meet.",
+        kind: "select",
+        required: true,
+        options: ["Anonymous", "Semi-open", "Open", "Not sure yet"],
+      },
+    ],
+  },
+  {
+    id: "education",
+    title: SECTION_TITLES.education,
+    description: "Intended parents often ask about education and work.",
+    fields: [
+      {
+        name: "school",
+        label: "College or university you attend or attended (or “None”)",
+        kind: "text",
+        required: true,
+        max: 200,
+        identifying: true,
+      },
+      {
+        name: "major",
+        label: "Major or field of study (or “None”)",
+        kind: "text",
+        required: true,
+        max: 200,
+      },
+      {
+        name: "academicStrengths",
+        label: "Your strongest subjects or academic strengths",
+        kind: "text",
+        required: true,
+        max: 300,
+      },
+      {
+        name: "testScores",
+        label: "GPA, SAT or ACT scores (optional)",
+        kind: "text",
+        max: 200,
+      },
+      {
+        name: "achievements",
+        label: "Awards, honors, Dean's List, volunteer work or other accomplishments (optional)",
+        kind: "textarea",
+        max: 1500,
+      },
+      {
+        name: "employmentStatus",
+        label: "Current employment status",
+        kind: "select",
+        required: true,
+        options: [
+          "Employed full-time",
+          "Employed part-time",
+          "Self-employed",
+          "Student",
+          "Student and working",
+          "Military",
+          "Homemaker",
+          "Not currently working",
+        ],
+      },
+      {
+        name: "careerGoals",
+        label: "Your future goals and career plans",
+        kind: "textarea",
+        required: true,
+        max: 1500,
+      },
     ],
   },
   {
@@ -135,14 +547,14 @@ export const FORM_SECTIONS: FormSectionDef[] = [
         label: "Eye color",
         kind: "select",
         required: true,
-        options: ["Black", "Brown", "Hazel", "Green", "Blue", "Gray", "Other"],
+        options: EYE_COLORS,
       },
       {
         name: "hairColor",
         label: "Natural hair color",
         kind: "select",
         required: true,
-        options: ["Black", "Dark brown", "Light brown", "Blonde", "Red", "Gray", "Other"],
+        options: HAIR_COLORS,
       },
       {
         name: "hairTexture",
@@ -165,7 +577,41 @@ export const FORM_SECTIONS: FormSectionDef[] = [
         required: true,
         options: ["Slim", "Athletic", "Average", "Curvy / stocky"],
       },
-      { name: "glasses", label: "Do you wear glasses or contacts?", kind: "yesno", required: true },
+      {
+        name: "bloodType",
+        label: "Blood type",
+        kind: "select",
+        required: true,
+        options: ["A+", "A−", "B+", "B−", "AB+", "AB−", "O+", "O−", "Don't know"],
+      },
+      {
+        name: "handedness",
+        label: "Which hand do you write with?",
+        kind: "select",
+        required: true,
+        options: ["Right", "Left", "Both (ambidextrous)"],
+      },
+      {
+        name: "glasses",
+        label: "Do you wear glasses or contacts, or have you had laser eye surgery?",
+        kind: "yesno",
+        required: true,
+      },
+      {
+        name: "visionDetails",
+        label: "Which one, and what for (e.g. nearsighted, farsighted, astigmatism)?",
+        kind: "text",
+        required: true,
+        max: 300,
+        showIf: { field: "glasses", equals: "Yes" },
+      },
+      {
+        name: "dimplesFreckles",
+        label: "Other features (optional)",
+        hint: "Dimples, freckles, birthmarks, a distinctive smile — anything parents might like to know.",
+        kind: "text",
+        max: 300,
+      },
     ],
   },
   {
@@ -278,6 +724,180 @@ export const FORM_SECTIONS: FormSectionDef[] = [
         max: 300,
         showIf: { field: "recentTattoo", equals: "Yes" },
       },
+      {
+        name: "teeth",
+        label: "Condition of your teeth",
+        kind: "select",
+        required: true,
+        options: ["Excellent", "Good", "Fair (some fillings or minor problems)", "Poor"],
+      },
+      {
+        name: "hearing",
+        label: "Your hearing",
+        kind: "select",
+        required: true,
+        options: ["Normal", "Mild hearing loss", "Significant loss / hearing aid"],
+      },
+      {
+        name: "everSmoked",
+        label: "Have you ever smoked cigarettes or vaped, even in the past?",
+        kind: "yesno",
+        required: true,
+      },
+      {
+        name: "smokingDetails",
+        label: "What, how much, and when did you stop (if you have)?",
+        kind: "text",
+        required: true,
+        max: 300,
+        showIf: { field: "everSmoked", equals: "Yes" },
+      },
+      {
+        name: "injectedDrugs",
+        label:
+          "Have you ever injected drugs that were not prescribed to you, or had a sexual partner who did?",
+        kind: "yesno",
+        required: true,
+      },
+      {
+        name: "injectedDrugsDetails",
+        label: "Please tell us more (what and when)",
+        kind: "textarea",
+        required: true,
+        max: 1000,
+        showIf: { field: "injectedDrugs", equals: "Yes" },
+      },
+      {
+        name: "acupuncture",
+        label:
+          "Have you had acupuncture or any other skin-piercing treatment in the past 12 months?",
+        kind: "yesno",
+        required: true,
+      },
+      {
+        name: "acupunctureDetails",
+        label: "When, and was it done by a licensed practitioner?",
+        kind: "text",
+        required: true,
+        max: 300,
+        showIf: { field: "acupuncture", equals: "Yes" },
+      },
+      {
+        name: "zika",
+        label:
+          "In the past 12 months, have you had Zika virus, tested positive for it, or traveled to an area with active Zika?",
+        kind: "yesno",
+        required: true,
+      },
+      {
+        name: "zikaDetails",
+        label: "Where and when?",
+        kind: "text",
+        required: true,
+        max: 300,
+        showIf: { field: "zika", equals: "Yes" },
+      },
+      {
+        name: "doctorCare",
+        label: "Are you currently under a doctor's care for any reason?",
+        kind: "yesno",
+        required: true,
+      },
+      {
+        name: "doctorCareDetails",
+        label: "What for?",
+        kind: "textarea",
+        required: true,
+        max: 1000,
+        showIf: { field: "doctorCare", equals: "Yes" },
+      },
+      {
+        name: "anesthesia",
+        label: "Have you ever had complications or problems with anesthesia?",
+        kind: "yesno",
+        required: true,
+      },
+      {
+        name: "anesthesiaDetails",
+        label: "What happened?",
+        kind: "textarea",
+        required: true,
+        max: 1000,
+        showIf: { field: "anesthesia", equals: "Yes" },
+      },
+      {
+        name: "psychMeds",
+        label:
+          "Have you ever taken medication such as anti-anxiety medicine or antidepressants for an emotional or psychological problem?",
+        kind: "yesno",
+        required: true,
+      },
+      {
+        name: "psychMedsDetails",
+        label: "Which medication, when, and for how long?",
+        kind: "textarea",
+        required: true,
+        max: 1000,
+        showIf: { field: "psychMeds", equals: "Yes" },
+      },
+      {
+        name: "medsPastYear",
+        label:
+          "Apart from anything listed above, have you taken any medications in the past 12 months?",
+        kind: "yesno",
+        required: true,
+      },
+      {
+        name: "medsPastYearDetails",
+        label: "Which ones, and what for?",
+        kind: "textarea",
+        required: true,
+        max: 1000,
+        showIf: { field: "medsPastYear", equals: "Yes" },
+      },
+      {
+        name: "transfusion",
+        label: "Have you ever had a blood transfusion?",
+        kind: "yesno",
+        required: true,
+      },
+      {
+        name: "transfusionDetails",
+        label: "When, and why?",
+        kind: "text",
+        required: true,
+        max: 300,
+        showIf: { field: "transfusion", equals: "Yes" },
+      },
+      {
+        name: "recentVaccines",
+        label: "Have you had any vaccinations in the past 12 months?",
+        kind: "yesno",
+        required: true,
+      },
+      {
+        name: "recentVaccinesDetails",
+        label: "Which vaccines, and when?",
+        kind: "text",
+        required: true,
+        max: 300,
+        showIf: { field: "recentVaccines", equals: "Yes" },
+      },
+      {
+        name: "radiation",
+        label:
+          "Have you had significant radiation or X-ray exposure (e.g. radiation therapy, or X-rays as part of your job)?",
+        kind: "yesno",
+        required: true,
+      },
+      {
+        name: "radiationDetails",
+        label: "Please describe",
+        kind: "textarea",
+        required: true,
+        max: 1000,
+        showIf: { field: "radiation", equals: "Yes" },
+      },
     ],
   },
   {
@@ -295,7 +915,80 @@ export const FORM_SECTIONS: FormSectionDef[] = [
         showIf: { field: "adopted", equals: "Yes" },
       },
       {
+        name: "relatives",
+        label: "Your parents and grandparents",
+        hint: "Intended parents care a lot about these. Fill in what you know — choose or write “Unknown” if you don't know something.",
+        kind: "grid",
+        required: true,
+        rows: [
+          { key: "mother", label: "Mother", required: true },
+          { key: "father", label: "Father", required: true },
+          {
+            key: "maternalGrandmother",
+            label: "Maternal grandmother (mother's mother)",
+            required: true,
+          },
+          {
+            key: "maternalGrandfather",
+            label: "Maternal grandfather (mother's father)",
+            required: true,
+          },
+          {
+            key: "paternalGrandmother",
+            label: "Paternal grandmother (father's mother)",
+            required: true,
+          },
+          {
+            key: "paternalGrandfather",
+            label: "Paternal grandfather (father's father)",
+            required: true,
+          },
+        ],
+        columns: RELATIVE_COLUMNS,
+      },
+      {
+        name: "siblingCount",
+        label: "How many brothers and sisters do you have (including half-siblings)?",
+        kind: "number",
+        required: true,
+        min: 0,
+        max: 20,
+      },
+      {
+        name: "siblingDetails",
+        label: "Your brothers and sisters",
+        hint: "Fill in one row per brother or sister (up to 4).",
+        kind: "grid",
+        required: true,
+        rows: [
+          { key: "sibling1", label: "Brother / sister 1" },
+          { key: "sibling2", label: "Brother / sister 2" },
+          { key: "sibling3", label: "Brother / sister 3" },
+          { key: "sibling4", label: "Brother / sister 4" },
+        ],
+        columns: SIBLING_COLUMNS,
+        showIf: { field: "siblingCount", gt: 0 },
+      },
+      ...FAMILY_CHECKLIST.map((f, i) =>
+        i === 0
+          ? {
+              ...f,
+              hint: "Has any blood relative (parents, brothers and sisters, grandparents, aunts, uncles, cousins) had any of the following? Think about their surgeries, hospital stays and medications. These lists are examples only — if something isn't listed, choose the “Other” option and describe it below.",
+            }
+          : f,
+      ),
+      {
+        name: "familyChecklistDetails",
+        label:
+          "For each condition you ticked: what it is, which relative, and their age when it was diagnosed",
+        kind: "textarea",
+        required: true,
+        max: 3000,
+        showIf: { fields: FAMILY_CHECKLIST.map((f) => f.name), anyExcept: NONE },
+      },
+      {
         name: "familyConditions",
+        retired: true,
         label:
           "Has any blood relative had any of the following — or any other physical, mental-health, genetic or inherited condition?",
         hint: "This list shows common examples only and is not complete. If a relative has any condition that isn't listed, choose “Other condition not listed here” and describe it.",
@@ -305,6 +998,7 @@ export const FORM_SECTIONS: FormSectionDef[] = [
       },
       {
         name: "familyConditionDetails",
+        retired: true,
         label:
           "For each condition (including any not listed above): what it is, which relative, and their age when diagnosed",
         kind: "textarea",
@@ -346,6 +1040,18 @@ export const FORM_SECTIONS: FormSectionDef[] = [
         kind: "textarea",
         required: true,
         max: 1000,
+      },
+      {
+        name: "prematureBaldness",
+        label: "Do you or anyone in your family have premature baldness?",
+        kind: "yesno",
+        required: true,
+      },
+      {
+        name: "prematureGraying",
+        label: "Do you or anyone in your family have premature graying (gray hair before 30)?",
+        kind: "yesno",
+        required: true,
       },
       {
         name: "anythingElse",
@@ -477,19 +1183,165 @@ export const FORM_SECTIONS: FormSectionDef[] = [
         max: 1500,
         showIf: { field: "hasReproductiveConditions", equals: "Yes" },
       },
+      {
+        name: "childrenHealthy",
+        label: "Were all of your children born healthy, without birth defects?",
+        hint: "For example: heart defect, cleft lip, club foot.",
+        kind: "yesno",
+        required: true,
+        onlyFor: "egg",
+        showIf: { field: "liveBirths", gt: 0 },
+      },
+      {
+        name: "childrenHealthy",
+        label: "Were all of your children born healthy, without birth defects?",
+        hint: "For example: heart defect, cleft lip, club foot.",
+        kind: "yesno",
+        required: true,
+        onlyFor: "sperm",
+        showIf: { field: "childrenFathered", gt: 0 },
+      },
+      {
+        name: "childrenHealthDetails",
+        label: "Please describe the condition",
+        kind: "textarea",
+        required: true,
+        max: 1000,
+        showIf: { field: "childrenHealthy", equals: "No" },
+      },
+      {
+        name: "breastfeeding",
+        label: "Are you currently breastfeeding?",
+        kind: "yesno",
+        required: true,
+        onlyFor: "egg",
+      },
+      {
+        name: "lastPap",
+        label: "When was your last Pap smear? (month and year, or “Never”)",
+        kind: "text",
+        required: true,
+        max: 60,
+        onlyFor: "egg",
+      },
+      {
+        name: "abnormalPap",
+        label: "Have you ever had an abnormal Pap smear?",
+        kind: "yesno",
+        required: true,
+        onlyFor: "egg",
+      },
+      {
+        name: "abnormalPapDetails",
+        label: "When, and what follow-up or treatment did you have?",
+        kind: "textarea",
+        required: true,
+        max: 1000,
+        onlyFor: "egg",
+        showIf: { field: "abnormalPap", equals: "Yes" },
+      },
+      {
+        name: "sexualOrientation",
+        label: "Sexual orientation",
+        hint: "Asked because FDA donor screening rules require it. Kept confidential.",
+        kind: "select",
+        required: true,
+        options: ["Heterosexual", "Gay / lesbian", "Bisexual", "Other", "Prefer not to say"],
+      },
+      {
+        name: "partnersPast6Months",
+        label: "Number of sexual partners in the past 6 months",
+        kind: "number",
+        required: true,
+        min: 0,
+        max: 100,
+      },
+      {
+        name: "unprotectedNewPartner",
+        label: "In the past 6 months, have you had sex without a condom with a new partner?",
+        kind: "yesno",
+        required: true,
+      },
+      {
+        name: "geneticTesting",
+        label: "Have you ever had genetic testing (e.g. carrier screening, 23andMe health report)?",
+        kind: "yesno",
+        required: true,
+      },
+      {
+        name: "geneticTestingDetails",
+        label: "Which test, when, and did it find any genetic condition or carrier status?",
+        kind: "textarea",
+        required: true,
+        max: 1500,
+        showIf: { field: "geneticTesting", equals: "Yes" },
+      },
+      {
+        name: "previousDonationDetails",
+        label:
+          "If you have donated before: for each donation, the clinic and city, the result, and whether it led to a pregnancy or birth (optional)",
+        hint: "Leave empty if this is your first donation.",
+        kind: "textarea",
+        max: 2000,
+      },
     ],
   },
 ];
 
+/** The questions an applicant of this donor type answers in a section. */
 export function sectionFields(id: FormSectionId, donorType: DonorType): FieldDef[] {
   const def = FORM_SECTIONS.find((s) => s.id === id)!;
-  return def.fields.filter((f) => !f.onlyFor || f.onlyFor === donorType);
+  return def.fields.filter((f) => !f.retired && (!f.onlyFor || f.onlyFor === donorType));
+}
+
+/**
+ * Questions to show staff for a saved section: the current ones, plus retired
+ * ones that this applicant answered before they were replaced.
+ */
+export function displayFields(
+  id: FormSectionId,
+  donorType: DonorType,
+  values: Record<string, unknown>,
+): FieldDef[] {
+  const def = FORM_SECTIONS.find((s) => s.id === id)!;
+  return def.fields.filter(
+    (f) =>
+      (!f.onlyFor || f.onlyFor === donorType) &&
+      (!f.retired || !isBlank(values[f.name])) &&
+      isFieldVisible(f, values),
+  );
+}
+
+/** A saved answer as readable text (grids become one line per person). */
+export function formatAnswer(f: FieldDef, v: unknown): string {
+  if (f.kind === "grid") {
+    const grid = (v && typeof v === "object" ? v : {}) as Record<string, Record<string, unknown>>;
+    const lines = (f.rows ?? []).flatMap((r) => {
+      const cells = (f.columns ?? [])
+        .map((c) => [c.label, grid[r.key]?.[c.key]] as const)
+        .filter(([, x]) => typeof x === "string" && x.trim() !== "")
+        .map(([l, x]) => `${l}: ${String(x).trim()}`);
+      return cells.length ? [`${r.label} — ${cells.join(" · ")}`] : [];
+    });
+    return lines.length ? lines.join("\n") : "–";
+  }
+  if (v === null || v === undefined || v === "") return "–";
+  if (typeof v === "boolean") return v ? "Yes" : "No";
+  if (Array.isArray(v)) return v.length ? v.join(", ") : "–";
+  return String(v);
 }
 
 /** Is this (follow-up) field shown, given the answers so far? */
 export function isFieldVisible(f: FieldDef, values: Record<string, unknown>): boolean {
   const c = f.showIf;
   if (!c) return true;
+  if ("fields" in c) {
+    return c.fields.some((name) => {
+      const x = values[name];
+      const arr = Array.isArray(x) ? x : x ? [x] : [];
+      return arr.some((y) => y !== c.anyExcept);
+    });
+  }
   const v = values[c.field];
   if ("equals" in c) return v === c.equals;
   if ("anyExcept" in c) {
@@ -514,12 +1366,14 @@ export function dropHidden(
   return out;
 }
 
-const isBlank = (v: unknown) =>
-  v === undefined ||
-  v === null ||
-  v === "" ||
-  (typeof v === "string" && v.trim() === "") ||
-  (Array.isArray(v) && v.length === 0);
+function isBlank(v: unknown): boolean {
+  if (v === undefined || v === null) return true;
+  if (typeof v === "string") return v.trim() === "";
+  if (Array.isArray(v)) return v.length === 0;
+  // A grid is blank when no cell has been filled in.
+  if (typeof v === "object") return Object.values(v as object).every(isBlank);
+  return false;
+}
 
 /** Required follow-ups that are shown but unanswered: { field: message }. */
 export function followUpIssues(
@@ -558,9 +1412,35 @@ function fieldSchema(f: FieldDef, strict: boolean): z.ZodType {
     }
     case "multi": {
       const arr = z.array(z.enum(f.options as [string, ...string[]])).max(f.options!.length);
-      return strict && f.required
-        ? arr.min(1, "Please select at least one option (or 'None of these')")
-        : arr.optional();
+      const msg = f.options!.includes(NONE)
+        ? "Please select at least one option (or 'None of these')"
+        : "Please select at least one option";
+      return strict && f.required ? arr.min(1, msg) : arr.optional();
+    }
+    case "grid": {
+      const rowShape: Record<string, z.ZodType> = {};
+      for (const r of f.rows ?? []) {
+        const cells: Record<string, z.ZodType> = {};
+        for (const c of f.columns ?? []) {
+          const needed = strict && f.required && r.required;
+          if (c.kind === "select") {
+            const e = z.enum(c.options as [string, ...string[]], { error: "Please choose one" });
+            cells[c.key] = needed ? e : e.optional().or(z.literal(""));
+          } else {
+            const t = z
+              .string()
+              .trim()
+              .max(c.max ?? 200, `Please keep this under ${c.max ?? 200} characters`);
+            cells[c.key] = needed
+              ? t.min(1, "Required (write “Unknown” if you don't know)")
+              : t.optional();
+          }
+        }
+        const row = z.object(cells).strict();
+        rowShape[r.key] = strict && f.required && r.required ? row : row.optional();
+      }
+      const grid = z.object(rowShape).strict();
+      return strict && f.required ? grid : grid.optional();
     }
     case "number": {
       const n = z
