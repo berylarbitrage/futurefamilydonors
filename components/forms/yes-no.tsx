@@ -26,16 +26,11 @@ export function YesNo({
       {hint && <p className="text-muted text-xs">{hint}</p>}
       <div className="flex gap-3">
         {(["yes", "no"] as const).map((v) => (
-          <label
-            key={v}
-            className={cn(
-              "border-ink bg-card flex h-12 flex-1 cursor-pointer items-center justify-center rounded-[10px] border-3 text-sm font-bold capitalize",
-              "has-[:checked]:bg-sun has-[:checked]:shadow-[3px_3px_0_0_#111]",
-              "has-[:focus-visible]:outline-ring has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2",
-            )}
-          >
-            <input type="radio" value={v} className="sr-only" {...register} />
-            {v}
+          <label key={v} className="flex-1 cursor-pointer">
+            <input type="radio" value={v} className="peer sr-only" {...register} />
+            <span className="border-ink bg-card peer-checked:bg-sun peer-focus-visible:outline-ring flex h-12 items-center justify-center rounded-[10px] border-3 text-sm font-bold capitalize transition-colors peer-checked:shadow-[3px_3px_0_0_#111] peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2">
+              {v}
+            </span>
           </label>
         ))}
       </div>

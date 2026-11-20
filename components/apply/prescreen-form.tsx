@@ -893,17 +893,16 @@ export function PrescreenForm({
                         ["unknown", "Unknown"],
                       ] as const
                     ).map(([v, l]) => (
-                      <label
-                        key={v}
-                        className="border-ink bg-card has-[:checked]:bg-sun has-[:focus-visible]:outline-ring flex h-12 cursor-pointer items-center justify-center rounded-[10px] border-3 text-sm font-bold has-[:checked]:shadow-[3px_3px_0_0_#111] has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2"
-                      >
+                      <label key={v} className="cursor-pointer">
                         <input
                           type="radio"
                           value={v}
-                          className="sr-only"
+                          className="peer sr-only"
                           {...register("prevPregnancyKnown")}
                         />
-                        {l}
+                        <span className="border-ink bg-card peer-checked:bg-sun peer-focus-visible:outline-ring flex h-12 items-center justify-center rounded-[10px] border-3 text-sm font-bold transition-colors peer-checked:shadow-[3px_3px_0_0_#111] peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2">
+                          {l}
+                        </span>
                       </label>
                     ))}
                   </div>
