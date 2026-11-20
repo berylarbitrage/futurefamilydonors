@@ -121,6 +121,9 @@ const FAMILY_CONDITIONS = [
   "None of these",
 ] as const;
 
+/** Colleges an applicant can list in the full application. */
+export const MAX_SCHOOLS = 8;
+
 const EYE_COLORS = ["Black", "Brown", "Hazel", "Green", "Blue", "Gray", "Other"] as const;
 const HAIR_COLORS = [
   "Black",
@@ -623,24 +626,16 @@ export const FORM_SECTIONS: FormSectionDef[] = [
         max: 200,
         identifying: true,
       },
-      {
-        name: "school2",
+      // More schools: each box appears once the one before it is filled in.
+      ...Array.from({ length: MAX_SCHOOLS - 1 }, (_, i): FieldDef => ({
+        name: `school${i + 2}`,
         label: "Another college or university (optional)",
         kind: "text",
         max: 200,
         widget: "school",
         identifying: true,
-        showIf: { field: "school", filled: true },
-      },
-      {
-        name: "school3",
-        label: "Another college or university (optional)",
-        kind: "text",
-        max: 200,
-        widget: "school",
-        identifying: true,
-        showIf: { field: "school2", filled: true },
-      },
+        showIf: { field: i === 0 ? "school" : `school${i + 1}`, filled: true },
+      })),
       {
         name: "major",
         label: "Major or field of study",
