@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { CheckCircle2, Circle } from "lucide-react";
+import { ArrowRight, CheckCircle2, Circle } from "lucide-react";
 import {
   ALL_SECTION_IDS,
   completionPercent,
@@ -17,6 +17,7 @@ import { SectionForm } from "@/components/portal/section-form";
 import { PhotoUploader, type PortalPhoto } from "@/components/portal/photo-uploader";
 import { DocumentUploader, type PortalDocument } from "@/components/portal/document-uploader";
 import { SignatureForm } from "@/components/portal/signature-form";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 /** Portal steps: the application sections plus an optional Documents step (not counted in progress). */
@@ -48,6 +49,8 @@ export function FullApplication({
   const firstOpen = ALL_SECTION_IDS.find((s) => !initialCompleted.includes(s)) ?? "background";
   const [active, setActive] = useState<Step>(submitted ? "background" : firstOpen);
   const pct = completionPercent(completed);
+
+  const nextStep: Step | undefined = STEPS[STEPS.indexOf(active) + 1];
 
   const go = (s: Step) => {
     setActive(s);
@@ -151,6 +154,19 @@ export function FullApplication({
           />
         )}
         {active === "documents" && <DocumentUploader donorType={donorType} documents={documents} />}
+        {(active === "photos" || active === "documents") && nextStep && (
+          <div className="border-border mt-8 flex flex-wrap items-center gap-3 border-t pt-6">
+            <Button type="button" onClick={() => go(nextStep)}>
+              {active === "photos" && !submitted ? "Save & continue" : "Continue"}
+              <ArrowRight aria-hidden />
+            </Button>
+            <span className="text-muted text-sm">
+              {active === "photos" && !completed.includes("photos")
+                ? "You need at least 3 photos before you can submit — you can add them later."
+                : `Next: ${stepTitle(nextStep)}`}
+            </span>
+          </div>
+        )}
         {active === "signature" && (
           <SignatureForm
             submitted={submitted}
