@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   followUpIssues,
   isFieldVisible,
+  sanitizeForForm,
   sectionFields,
   sectionSchema,
   type FieldDef,
@@ -17,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { NativeSelect } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { SchoolCombobox } from "@/components/forms/school-combobox";
 import { cn } from "@/lib/utils";
 
 type Values = Record<string, unknown>;
@@ -56,7 +58,7 @@ function clean(values: Values, fields: FieldDef[]): Values {
 export function SectionForm({
   section,
   donorType,
-  initial,
+  initial: saved,
   readOnly,
   onSaved,
 }: {
@@ -67,6 +69,8 @@ export function SectionForm({
   onSaved: (completed: string[], data: Values, advance: boolean) => void;
 }) {
   const fields = sectionFields(section, donorType);
+  // Read-only (submitted) shows exactly what was sent; drafts drop answers that are no longer choices.
+  const initial = readOnly ? saved : sanitizeForForm(fields, saved);
   const [status, setStatus] = useState<string | null>(null);
   const [saving, setSaving] = useState<"draft" | "complete" | "auto" | null>(null);
   const zr = zodResolver(sectionSchema(section, donorType, true)) as unknown as Resolver<Values>;
@@ -85,6 +89,7 @@ export function SectionForm({
     register,
     handleSubmit,
     getValues,
+    setValue,
     setError,
     watch,
     formState: { errors },
@@ -314,6 +319,14 @@ export function SectionForm({
                       </option>
                     ))}
                   </NativeSelect>
+                ) : f.widget === "school" ? (
+                  <SchoolCombobox
+                    id={f.name}
+                    value={(values[f.name] as string | undefined) ?? ""}
+                    onChange={(v) => setValue(f.name, v, { shouldDirty: true })}
+                    invalid={!!err}
+                    describedBy={err ? `${f.name}-error` : undefined}
+                  />
                 ) : f.kind === "number" ? (
                   <Input
                     id={f.name}

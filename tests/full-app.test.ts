@@ -4,6 +4,7 @@ import {
   displayFields,
   formatAnswer,
   isFieldVisible,
+  sanitizeForForm,
   sectionFields,
   sectionSchema,
 } from "@/lib/full-app";
@@ -42,7 +43,7 @@ describe("full application sections", () => {
       stdHistory: "No",
       hasReproductiveConditions: "No",
       breastfeeding: "No",
-      lastPap: "March 2026",
+      lastPap: "In the last 12 months",
       abnormalPap: "No",
       sexualOrientation: "Heterosexual",
       partnersPast6Months: 1,
@@ -84,13 +85,14 @@ describe("full application sections", () => {
   it("family grid: parents and grandparents are required, siblings only when there are any", () => {
     const fam = sectionSchema("family", "egg", true);
     const person = {
+      living: "Living",
       age: "58",
       height: "5'6\"",
       eyeColor: "Brown",
       hairColor: "Black",
       ethnicity: "Irish",
       education: "Bachelor's degree",
-      occupation: "Teacher",
+      occupation: "Education / teaching",
     };
     const none = "None of these";
     const checklist = Object.fromEntries(
@@ -167,5 +169,22 @@ describe("full application sections", () => {
     expect(isFieldVisible(f, { childrenFathered: 0 })).toBe(false);
     expect(isFieldVisible(f, { childrenFathered: 2 })).toBe(true);
     expect(sectionFields("reproductive", "sperm").map((x) => x.name)).not.toContain("lastPap");
+  });
+
+  it("clears answers that are no longer one of the choices (text that became a dropdown)", () => {
+    const fields = sectionFields("education", "egg");
+    const out = sanitizeForForm(fields, {
+      school: "UT Austin",
+      major: "Biology major, minor in art", // old free text
+      academicStrengths: "math", // old free text, now a multi-select
+    });
+    expect(out.school).toBe("UT Austin");
+    expect(out).not.toHaveProperty("major");
+    expect(out).not.toHaveProperty("academicStrengths");
+    const rel = sectionFields("family", "egg");
+    const fam = sanitizeForForm(rel, {
+      relatives: { mother: { occupation: "Teacher", eyeColor: "Brown" } },
+    });
+    expect(fam.relatives).toEqual({ mother: { eyeColor: "Brown" } });
   });
 });
