@@ -187,4 +187,13 @@ describe("full application sections", () => {
     });
     expect(fam.relatives).toEqual({ mother: { eyeColor: "Brown" } });
   });
+
+  it("offers up to 8 schools, each appearing once the previous one is filled", () => {
+    const f = sectionFields("education", "egg");
+    const names = f.filter((x) => x.widget === "school").map((x) => x.name);
+    expect(names).toEqual(["school", ...[2, 3, 4, 5, 6, 7, 8].map((n) => `school${n}`)]);
+    const s4 = f.find((x) => x.name === "school4")!;
+    expect(isFieldVisible(s4, { school: "A", school2: "B" })).toBe(false);
+    expect(isFieldVisible(s4, { school: "A", school2: "B", school3: "C" })).toBe(true);
+  });
 });

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { requireUser } from "@/lib/auth";
+import { MAX_SCHOOLS } from "@/lib/full-app";
 import { getFullApp, getOwnApplication, photosComplete, withSection } from "@/lib/portal";
 import { FullApplication } from "@/components/portal/full-application";
 import type { PortalPhoto } from "@/components/portal/photo-uploader";
@@ -74,13 +75,9 @@ export default async function FullApplicationPage({
     const schools = (pre?.prescreen_details as { schools?: { name?: string }[] } | null)?.schools;
     const names = (schools ?? []).map((s) => s.name?.trim()).filter((n): n is string => !!n);
     if (names.length) {
-      const [school, school2, school3] = names;
-      initialSections.education = {
-        ...initialSections.education,
-        school,
-        ...(school2 ? { school2 } : {}),
-        ...(school3 ? { school3 } : {}),
-      };
+      const prefill: Record<string, string> = {};
+      names.slice(0, MAX_SCHOOLS).forEach((n, i) => (prefill[i ? `school${i + 1}` : "school"] = n));
+      initialSections.education = { ...initialSections.education, ...prefill };
     }
   }
 
