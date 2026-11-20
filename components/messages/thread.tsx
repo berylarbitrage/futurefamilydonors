@@ -1,4 +1,6 @@
 import { cn } from "@/lib/utils";
+import type { AttachmentInfo } from "@/lib/attachments";
+import { AttachmentList } from "@/components/messages/attachment-list";
 
 export interface ThreadMessage {
   id: string;
@@ -9,6 +11,7 @@ export interface ThreadMessage {
   email_status?: "sent" | "failed" | "not_sent";
   email_error?: string | null;
   author_label?: string;
+  attachments?: AttachmentInfo[];
 }
 
 /**
@@ -48,7 +51,10 @@ export function MessageThread({
                 · {fmt(m.created_at)}
               </p>
               {m.subject && <p className="mb-1 font-semibold">{m.subject}</p>}
-              <p className="whitespace-pre-wrap">{m.body}</p>
+              <p className="whitespace-pre-wrap" data-private>
+                {m.body}
+              </p>
+              <AttachmentList items={m.attachments ?? []} />
               {viewer === "admin" && m.direction === "outbound" && m.email_status === "failed" && (
                 <p className="text-destructive mt-2 text-xs">
                   Email not delivered{m.email_error ? `: ${m.email_error}` : ""}. Check

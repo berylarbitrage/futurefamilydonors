@@ -70,6 +70,8 @@ const PERSONAL_CONDITIONS = [
   "Autoimmune disorder",
   "Thyroid disorder",
   "Sexually transmitted infection",
+  "Genetic or inherited condition",
+  "Other condition not listed here",
   "None of these",
 ] as const;
 const FAMILY_CONDITIONS = [
@@ -83,6 +85,7 @@ const FAMILY_CONDITIONS = [
   "Genetic disorder (e.g. cystic fibrosis, sickle cell, Tay-Sachs)",
   "Intellectual disability",
   "Hearing or vision loss before age 50",
+  "Other condition not listed here",
   "None of these",
 ] as const;
 
@@ -172,7 +175,9 @@ export const FORM_SECTIONS: FormSectionDef[] = [
     fields: [
       {
         name: "conditions",
-        label: "Have you ever been diagnosed with any of the following?",
+        label:
+          "Have you ever been diagnosed with, or treated for, any of the following — or any other physical, mental-health or genetic condition?",
+        hint: "This list shows common examples only and is not complete. Please tell us about every condition you know of, even if it isn't listed — choose “Other condition not listed here” and describe it.",
         kind: "multi",
         required: true,
         options: PERSONAL_CONDITIONS,
@@ -180,7 +185,7 @@ export const FORM_SECTIONS: FormSectionDef[] = [
       {
         name: "conditionDetails",
         label:
-          "Please describe each condition: when it was diagnosed, treatment, and current status",
+          "Please describe each condition (including any not listed above): when it was diagnosed, treatment, and current status",
         kind: "textarea",
         required: true,
         max: 2000,
@@ -291,14 +296,17 @@ export const FORM_SECTIONS: FormSectionDef[] = [
       },
       {
         name: "familyConditions",
-        label: "Has any blood relative had any of the following?",
+        label:
+          "Has any blood relative had any of the following — or any other physical, mental-health, genetic or inherited condition?",
+        hint: "This list shows common examples only and is not complete. If a relative has any condition that isn't listed, choose “Other condition not listed here” and describe it.",
         kind: "multi",
         required: true,
         options: FAMILY_CONDITIONS,
       },
       {
         name: "familyConditionDetails",
-        label: "For each condition: which relative, and their age when diagnosed",
+        label:
+          "For each condition (including any not listed above): what it is, which relative, and their age when diagnosed",
         kind: "textarea",
         required: true,
         max: 2000,
@@ -338,6 +346,21 @@ export const FORM_SECTIONS: FormSectionDef[] = [
         kind: "textarea",
         required: true,
         max: 1000,
+      },
+      {
+        name: "anythingElse",
+        label:
+          "Is there anything else about your own or your blood relatives' health — including any genetic or inherited condition, or a condition not asked about above — that you know of?",
+        kind: "yesno",
+        required: true,
+      },
+      {
+        name: "anythingElseDetails",
+        label: "Please tell us about it",
+        kind: "textarea",
+        required: true,
+        max: 2000,
+        showIf: { field: "anythingElse", equals: "Yes" },
       },
     ],
   },
@@ -583,13 +606,44 @@ export const VIDEO_LIMITS = {
   mimeTypes: ["video/mp4", "video/quicktime", "video/webm"] as const,
 };
 
-/** File extension used in storage for an allowed photo/video type. */
+/** One optional voice recording (stored in `photos` with kind = "audio"). */
+export const AUDIO_LIMITS = {
+  maxBytes: 20 * 1024 * 1024,
+  mimeTypes: [
+    "audio/mpeg",
+    "audio/mp4",
+    "audio/x-m4a",
+    "audio/aac",
+    "audio/wav",
+    "audio/x-wav",
+    "audio/webm",
+    "audio/ogg",
+  ] as const,
+};
+
+/** Rows in `photos` with these kinds are photos; "video"/"audio" are extra media. */
+export const PHOTO_KINDS = ["childhood", "recent"] as const;
+export const isPhotoKind = (kind: string) => (PHOTO_KINDS as readonly string[]).includes(kind);
+
+const EXT: Record<string, string> = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "video/mp4": "mp4",
+  "video/quicktime": "mov",
+  "video/webm": "webm",
+  "audio/mpeg": "mp3",
+  "audio/mp4": "m4a",
+  "audio/x-m4a": "m4a",
+  "audio/aac": "aac",
+  "audio/wav": "wav",
+  "audio/x-wav": "wav",
+  "audio/webm": "weba",
+  "audio/ogg": "ogg",
+};
+
+/** File extension used in storage for an allowed photo/video/audio type. */
 export function mediaExt(contentType: string): string {
-  return (
-    { "image/png": "png", "video/mp4": "mp4", "video/quicktime": "mov", "video/webm": "webm" }[
-      contentType
-    ] ?? "jpg"
-  );
+  return EXT[contentType] ?? "jpg";
 }
 
 export function completionPercent(completed: readonly string[]): number {
@@ -600,4 +654,6 @@ export function completionPercent(completed: readonly string[]): number {
 export const signatureSchema = z.object({
   signedName: z.string().trim().min(3, "Please type your full legal name").max(120),
   attest: z.literal(true, { error: "Please confirm the statement above" }),
+  /** Health disclosure statement (lists are examples only; I disclosed everything I know). */
+  disclose: z.literal(true, { error: "Please confirm the health disclosure statement" }),
 });

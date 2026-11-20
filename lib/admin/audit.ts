@@ -12,11 +12,17 @@ export type AuditAction =
   | "view_catalog_donor"
   | "invite_member"
   | "change_role"
-  | "remove_member";
+  | "remove_member"
+  | "account_registered"
+  | "decision_next_step"
+  | "decision_decline"
+  | "decision_screening"
+  | "no_reply_needed"
+  | "reminder_sent";
 
 /** Append to audit_log. `meta` must never contain health information. */
 export async function audit(
-  actorId: string,
+  actorId: string | null,
   action: AuditAction,
   targetId: string | null,
   meta: Record<string, unknown> = {},

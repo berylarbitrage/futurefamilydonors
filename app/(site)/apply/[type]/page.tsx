@@ -29,10 +29,10 @@ export default async function ApplyPage({ params }: { params: Promise<{ type: st
       <div className="mx-auto max-w-2xl px-4 py-10 md:py-16">
         <p className="tag">{type === "egg" ? "Egg donor" : "Sperm donor"} application</p>
         <h1 className="mt-4 mb-8 text-[2.3rem] leading-[1.05] font-extrabold md:text-5xl">
-          Do you <em className="em-sticker">pre-qualify?</em>
+          Let&apos;s see if it&apos;s <em className="em-sticker">a fit</em>
         </h1>
         <p className="-mt-3 mb-8 text-lg font-medium">
-          Three short steps. About 3 minutes. Your answers stay private.
+          Three short steps. About 3 minutes. Our team reads every application personally.
         </p>
         <PrescreenForm type={type} turnstileSiteKey={turnstileSiteKey()} />
       </div>

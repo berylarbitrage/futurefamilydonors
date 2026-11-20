@@ -5,6 +5,7 @@ import { sendEmail } from "@/lib/email";
 import { env } from "@/lib/env";
 import { SITE } from "@/config/site";
 import ContactEmail from "@/emails/contact";
+import { emailVerifiedFor } from "@/lib/email-verification";
 
 export async function POST(req: Request) {
   const limited = checkRateLimit(req, "contact");
@@ -15,8 +16,12 @@ export async function POST(req: Request) {
     // Honeypot filled -> pretend success so bots learn nothing.
     return body.res;
   }
-  const { website, ...data } = body.data;
+  const { website, emailProof, ...data } = body.data;
   if (website) return json({ ok: true });
+  if (!(await emailVerifiedFor(emailProof, data.email.toLowerCase(), "contact")))
+    return errorJson("Please verify your email with the code we send you.", 400, {
+      code: "email_unverified",
+    });
 
   const to = env("ADMIN_NOTIFY_EMAIL") ?? SITE.contactEmail;
   const sent = await sendEmail({

@@ -60,8 +60,10 @@ export default function PrivacyPage() {
         <h2>4. Who can see it</h2>
         <p>
           Only authorized staff of {SITE.brand}, and the partner medical providers involved in your
-          screening. Service providers (hosting, email delivery) process data on our behalf under
-          contract.
+          screening. Service providers (hosting, email delivery, and website translation when you
+          choose another language) process data on our behalf under contract. If you use the
+          Language menu, the page text you&apos;re viewing is sent to our translation providers
+          (Anthropic, or Google Translate as a fallback) to be translated.
         </p>
 
         <h2>5. How long we keep it</h2>
@@ -106,9 +108,9 @@ export default function PrivacyPage() {
           <li>
             <strong>Disclosures:</strong> in the last 12 months we have disclosed these categories
             only to partner medical providers, matched intended parents (without your name, unless
-            you agree otherwise) and our service providers (hosting and email delivery). We have not
-            sold personal information, and we do not knowingly collect information from anyone under
-            16.
+            you agree otherwise) and our service providers (hosting, email delivery and website
+            translation). We have not sold personal information, and we do not knowingly collect
+            information from anyone under 16.
           </li>
           <li>
             <strong>Verifying requests:</strong> we will confirm your identity by matching the email

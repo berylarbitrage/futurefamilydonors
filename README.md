@@ -50,6 +50,7 @@ pnpm dev                     # http://localhost:3000
 
 ### Resend
 - [ ] 注册 resend.com，创建 API Key → `RESEND_API_KEY`
+- [ ] （可选）注册 console.anthropic.com，创建 API Key → `ANTHROPIC_API_KEY`（语言菜单用 AI 自然翻译；不设置则用 Google 翻译）
 - [ ] 测试模式：不设置 `EMAIL_FROM` 时用 `onboarding@resend.dev` 发信，**只能发给你注册 Resend 的邮箱**
 - [ ] 上线前：Domains → 添加并验证 `{{DOMAIN}}`（加 DNS 记录），然后设置
       `EMAIL_FROM="Brand Name <hello@{{DOMAIN}}>"`
@@ -81,6 +82,28 @@ pnpm dev                     # http://localhost:3000
 - `20261107000000_messages.sql`：协调员与捐赠者之间的消息记录
 - `20261108000000_roles.sql`：更多角色（协调员 / 只读员工 / 合作机构 / 准父母）及其权限
 - `20261109000000_owner.sql`：超级管理员（Owner），只能有一个
+- `20261110000000_international_followups.sql`：国际申请人（国家/省/城市/邮编，State/ZIP 改为可空）+ 预筛追问答案（`prescreen_details`）
+- `20261119000000_videos.sql`：预筛自我介绍视频（存储桶允许视频，最大 50 MB）
+- `20261120000000_account_setup.sql`：一次性"设置密码"注册链接（推进申请人到下一步、邀请团队成员时使用）
+- `20261121000000_audio.sql`：完整申请里可上传语音（存储桶允许音频文件，照片表允许 audio 类型）
+- `20261122000000_documents.sql`：完整申请里可选上传文件（学位证书、体检/基因检测报告等，PDF/JPG/PNG）
+- `20261123000000_message_attachments.sql`：消息可带附件和图片（申请人和工作人员双向，最多 5 个，每个 10 MB）
+- `20261124000000_email_codes.sql`：推荐、申请、联系表单的邮箱验证码（6 位数，10 分钟有效）
+- `20261125000000_translations.sql`：网站 AI 翻译缓存（每句话每种语言只翻译一次）
+- `20261126000000_reply_tracking.sql`：申请人消息「等待回复」提醒（可标记「No reply needed」）
+- `20261127000000_reminders.sql`：每日自动提醒申请人（未设置密码 / 未完成完整申请），并记录已发送的提醒
+
+### 审核流程（后台）
+
+1. 申请人提交预筛 → 只收到"已收到申请"邮件，状态 **New**（不会自动邀请或拒绝）
+2. 后台首页的流程看板显示 **Needs your decision**；在列表里或详情页点：
+   - **Move to next step**：为申请人建账号，发一封"设置密码"注册邮件（14 天内有效、只能用一次），状态变为 **Full app pending**；链接过期可点 **Resend registration link**
+   - **Decline**：选择拒绝信模板、可修改内容，或只标记拒绝不发邮件；状态变为 **Rejected**
+3. 申请人设置密码后，用邮箱 + 密码在 `/portal/login` 登录，填写完整申请
+4. 完整申请提交后看板显示 **Full app to review**；点 **Approve for screening** 或 **Decline**
+5. 每一步都记录在详情页的 **Timeline**（谁、什么时候、邮件是否发送成功）
+
+团队成员：在 `/admin/team` 输入邮箱、选择角色即可邀请；对方收到"设置密码"邮件。页面下方有各角色的权限对照表。
 
 所有迁移文件都可以重复运行（已存在的部分会跳过）。在 Supabase SQL Editor 中按文件名顺序各运行一次即可。
 

@@ -3,29 +3,18 @@ import { Download } from "lucide-react";
 import { requireStaff } from "@/lib/auth";
 import { can } from "@/lib/roles";
 import { applyFilters, filtersToQuery, parseFilters, type Filterable } from "@/lib/admin/filters";
-import { PAGE_SIZE, STATUSES, STATUS_LABELS, type Status } from "@/lib/admin/constants";
-import { ageOn } from "@/lib/dates";
+import { PAGE_SIZE, STATUSES, STATUS_LABELS } from "@/lib/admin/constants";
 import { US_STATES } from "@/config/us-states";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { NativeSelect } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-
-interface Row {
-  id: string;
-  created_at: string;
-  first_name: string;
-  last_name: string;
-  donor_type: "egg" | "sperm";
-  state: string | null;
-  country: string | null;
-  date_of_birth: string;
-  bmi: number | null;
-  eligible: boolean;
-  status: Status;
-  referral_code: string | null;
-}
+import { ApplicantCard, type ListRow } from "@/components/admin/applicant-card";
+import { STAGES } from "@/lib/admin/stages";
+import { createAdminClient, PHOTO_BUCKET } from "@/lib/supabase/admin";
+import { cn } from "@/lib/utils";
+import { awaitingReply, waitingFor } from "@/lib/admin/awaiting";
 
 interface Stats {
   total: number;
@@ -54,7 +43,7 @@ export default async function AdminListPage({
   const base = supabase
     .from("applications")
     .select(
-      "id,created_at,first_name,last_name,donor_type,state,country,date_of_birth,bmi,eligible,status,referral_code",
+      "id,created_at,first_name,last_name,email,phone,donor_type,country,state,region,city,date_of_birth,education,height_in,weight_lb,bmi,smoker,previous_donation,regular_cycles,birth_control,how_heard,prescreen_details,eligible,fail_reasons,status,referral_code",
       {
         count: "exact",
       },
@@ -69,35 +58,65 @@ export default async function AdminListPage({
     listQuery,
     supabase.rpc("admin_stats", { p_week_start: startOfWeekUtc().toISOString() }),
   ]);
-  const rows = (data ?? []) as Row[];
+  const rows = (data ?? []) as unknown as ListRow[];
   const stats = statsRes.data as Stats | null;
 
-  // Unread donor replies: on this page, and across all applications.
-  const unread = new Map<string, number>();
-  const [{ data: unreadRows }, { count: unreadTotal }, { count: awaitingReview }] =
-    await Promise.all([
-      rows.length
-        ? supabase
-            .from("messages")
-            .select("application_id")
-            .eq("direction", "inbound")
-            .is("read_at", null)
-            .in(
-              "application_id",
-              rows.map((r) => r.id),
-            )
-        : Promise.resolve({ data: [] as { application_id: string }[] }),
-      supabase
-        .from("messages")
-        .select("id", { count: "exact", head: true })
-        .eq("direction", "inbound")
-        .is("read_at", null),
-      supabase
+  // Applicant messages nobody has answered yet (until staff reply or mark
+  // "No reply needed"), plus full applications waiting for review.
+  const [awaiting, { count: awaitingReview }] = await Promise.all([
+    awaitingReply(supabase),
+    supabase
+      .from("applications")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "full_app_submitted"),
+  ]);
+  const waitingIds = [...awaiting.keys()];
+  const { data: waitingApps } = waitingIds.length
+    ? await supabase.from("applications").select("id,first_name,last_name").in("id", waitingIds)
+    : { data: [] as { id: string; first_name: string; last_name: string }[] };
+  const waiting = (waitingApps ?? [])
+    .map((a) => ({ ...a, ...awaiting.get(a.id)! }))
+    .sort((a, b) => a.since.localeCompare(b.since)); // longest wait first
+
+  // Pipeline board: how many applicants are in each stage.
+  const stageCounts = new Map<string, number>();
+  await Promise.all(
+    STAGES.map(async (st) => {
+      const { count: c } = await supabase
         .from("applications")
         .select("id", { count: "exact", head: true })
-        .eq("status", "full_app_submitted"),
-    ]);
-  unreadRows?.forEach((m) => unread.set(m.application_id, (unread.get(m.application_id) ?? 0) + 1));
+        .in("status", st.statuses as unknown as string[]);
+      stageCounts.set(st.id, c ?? 0);
+    }),
+  );
+
+  // Photo thumbnails (first pre-screen photo of each applicant on this page).
+  const thumbs = new Map<string, string>();
+  if (rows.length) {
+    const { data: photoRows } = await supabase
+      .from("photos")
+      .select("application_id,storage_path,kind,created_at")
+      .in(
+        "application_id",
+        rows.map((r) => r.id),
+      )
+      .in("kind", ["childhood", "recent"])
+      .order("created_at");
+    const firstPath = new Map<string, string>();
+    for (const ph of photoRows ?? []) {
+      if (!firstPath.has(ph.application_id)) firstPath.set(ph.application_id, ph.storage_path);
+    }
+    if (firstPath.size) {
+      const { data: urls } = await createAdminClient()
+        .storage.from(PHOTO_BUCKET)
+        .createSignedUrls([...firstPath.values()], 600);
+      const byPath = new Map((urls ?? []).map((u) => [u.path, u.signedUrl]));
+      for (const [appId, path] of firstPath) {
+        const u = byPath.get(path);
+        if (u) thumbs.set(appId, u);
+      }
+    }
+  }
 
   const codes = [...new Set(rows.map((r) => r.referral_code).filter(Boolean))] as string[];
   const referrers = new Map<string, string>();
@@ -125,13 +144,68 @@ export default async function AdminListPage({
               </Badge>
             </Link>
           )}
-          {(unreadTotal ?? 0) > 0 && (
-            <Badge tone="warn">
-              💬 {unreadTotal} unread donor {unreadTotal === 1 ? "reply" : "replies"}
-            </Badge>
-          )}
         </div>
       </div>
+
+      {waiting.length > 0 && (
+        <section
+          aria-label="Waiting for your reply"
+          className="border-accent/40 bg-accent-soft rounded-2xl border p-5"
+        >
+          <p className="font-semibold">
+            💬 {waiting.length} applicant{waiting.length === 1 ? " is" : "s are"} waiting for your
+            reply
+          </p>
+          <p className="text-muted mt-1 text-sm">
+            This stays here until you reply, or open the conversation and choose &ldquo;No reply
+            needed&rdquo;.
+          </p>
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {waiting.map((w) => (
+              <li key={w.id}>
+                <Link
+                  href={`/admin/applications/${w.id}#messages`}
+                  className="bg-card border-border hover:border-primary inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm"
+                >
+                  <span className="font-semibold">
+                    {w.first_name} {w.last_name}
+                  </span>
+                  <span className="text-muted">
+                    {w.count} message{w.count === 1 ? "" : "s"} · waiting {waitingFor(w.since, now)}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <nav aria-label="Pipeline" className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+        {STAGES.map((st) => {
+          const n = stageCounts.get(st.id) ?? 0;
+          const active = filters.stage === st.id;
+          return (
+            <Link
+              key={st.id}
+              href={active ? "/admin" : `/admin?stage=${st.id}`}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "rounded-2xl border p-4 transition hover:-translate-y-0.5 hover:shadow-md",
+                active
+                  ? "border-primary ring-primary bg-primary-soft ring-2"
+                  : "border-border bg-card",
+                st.urgent && n > 0 && !active && "border-accent bg-accent-soft",
+              )}
+            >
+              <p className="text-muted text-xs font-semibold tracking-wide uppercase">{st.label}</p>
+              <p className="mt-1 text-3xl font-semibold">{n}</p>
+              {st.urgent && n > 0 && (
+                <p className="text-primary mt-1 text-xs font-semibold">Action needed →</p>
+              )}
+            </Link>
+          );
+        })}
+      </nav>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
@@ -172,6 +246,8 @@ export default async function AdminListPage({
         className="border-border bg-card grid gap-3 rounded-2xl border p-4 sm:grid-cols-2 lg:grid-cols-6"
         method="get"
       >
+        {filters.stage && <input type="hidden" name="stage" value={filters.stage} />}
+        {filters.ref && <input type="hidden" name="ref" value={filters.ref} />}
         <Input
           name="q"
           defaultValue={filters.q}
@@ -232,76 +308,50 @@ export default async function AdminListPage({
         </p>
       )}
 
-      <div className="border-border bg-card overflow-x-auto rounded-2xl border">
-        <table className="w-full min-w-[900px] text-left text-sm">
-          <thead className="border-border bg-muted-bg text-muted border-b text-xs uppercase">
-            <tr>
-              {[
-                "Submitted",
-                "Name",
-                "Type",
-                "Location",
-                "Age",
-                "BMI",
-                "Pre-qualified",
-                "Status",
-                "Referrer",
-              ].map((h) => (
-                <th key={h} scope="col" className="px-4 py-3 font-semibold">
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-border divide-y">
-            {rows.map((r) => (
-              <tr key={r.id} className="hover:bg-muted-bg/50">
-                <td className="px-4 py-3 whitespace-nowrap">
-                  {new Date(r.created_at).toLocaleString("en-US", {
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                  })}
-                </td>
-                <td className="px-4 py-3">
-                  <Link
-                    href={`/admin/applications/${r.id}`}
-                    className="text-primary font-medium underline"
-                  >
-                    {r.first_name} {r.last_name}
-                  </Link>
-                  {unread.get(r.id) ? (
-                    <Badge tone="warn" className="ml-2">
-                      💬 {unread.get(r.id)} new
-                    </Badge>
-                  ) : null}
-                </td>
-                <td className="px-4 py-3 capitalize">{r.donor_type}</td>
-                <td className="px-4 py-3">
-                  {!r.country || r.country === "United States" ? r.state : r.country}
-                </td>
-                <td className="px-4 py-3">{ageOn(r.date_of_birth, now)}</td>
-                <td className="px-4 py-3">{r.bmi ?? "–"}</td>
-                <td className="px-4 py-3">
-                  {r.eligible ? <Badge tone="success">Yes</Badge> : <Badge tone="danger">No</Badge>}
-                </td>
-                <td className="px-4 py-3">
-                  <Badge>{STATUS_LABELS[r.status] ?? r.status}</Badge>
-                </td>
-                <td className="px-4 py-3">
-                  {r.referral_code ? (referrers.get(r.referral_code) ?? r.referral_code) : "–"}
-                </td>
-              </tr>
-            ))}
-            {rows.length === 0 && (
-              <tr>
-                <td colSpan={9} className="text-muted px-4 py-10 text-center">
-                  No applications match these filters.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      {filters.ref && (
+        <p className="text-sm">
+          Showing applicants referred by{" "}
+          <strong>
+            {referrers.get(filters.ref) ?? "this referrer"} (code {filters.ref})
+          </strong>{" "}
+          ·{" "}
+          <Link href="/admin/referrals" className="text-primary underline">
+            All referrals
+          </Link>{" "}
+          ·{" "}
+          <Link href="/admin" className="text-primary underline">
+            Show everyone
+          </Link>
+        </p>
+      )}
+
+      {filters.stage && (
+        <p className="text-sm">
+          Showing: <strong>{STAGES.find((x) => x.id === filters.stage)?.label}</strong> ·{" "}
+          <Link href="/admin" className="text-primary underline">
+            Show everyone
+          </Link>
+        </p>
+      )}
+
+      <ul className="space-y-3">
+        {rows.map((r) => (
+          <ApplicantCard
+            key={r.id}
+            r={r}
+            photoUrl={thumbs.get(r.id) ?? null}
+            referrer={r.referral_code ? (referrers.get(r.referral_code) ?? r.referral_code) : null}
+            awaiting={awaiting.get(r.id) ?? null}
+            canEdit={can(role, "edit_applications")}
+            now={now}
+          />
+        ))}
+        {rows.length === 0 && (
+          <li className="border-border bg-card text-muted rounded-2xl border px-4 py-10 text-center">
+            No applications match these filters.
+          </li>
+        )}
+      </ul>
 
       <nav aria-label="Pagination" className="flex items-center justify-between text-sm">
         <span className="text-muted">

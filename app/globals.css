@@ -265,3 +265,30 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Google Translate (language menu): hide its own toolbar and tooltips. */
+.goog-te-banner-frame,
+iframe.skiptranslate,
+#goog-gt-tt,
+.goog-te-balloon-frame,
+.goog-tooltip {
+  display: none !important;
+}
+body {
+  top: 0 !important;
+}
+.goog-text-highlight {
+  background: none !important;
+  box-shadow: none !important;
+}
+
+/* AI translation: hide the page until it's translated (max 3 s). */
+#site-content[data-translating] {
+  opacity: 0;
+  animation: gbc-reveal 0s 3s forwards;
+}
+@keyframes gbc-reveal {
+  to {
+    opacity: 1;
+  }
+}

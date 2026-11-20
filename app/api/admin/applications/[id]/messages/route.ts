@@ -4,13 +4,24 @@ import { getUserWith } from "@/lib/auth";
 import { audit } from "@/lib/admin/audit";
 import { sendCoordinatorMessage } from "@/lib/messages/send";
 import { log } from "@/lib/log";
+import { ATTACHMENT_LIMITS } from "@/lib/attachments";
 
 const idSchema = z.string().uuid();
-const sendSchema = z.object({
-  subject: z.string().trim().min(1, "Please add a subject").max(150),
-  body: z.string().trim().min(1, "Please write a message").max(5000),
-});
-const patchSchema = z.object({ markRead: z.literal(true) });
+const sendSchema = z
+  .object({
+    subject: z.string().trim().min(1, "Please add a subject").max(150),
+    body: z.string().trim().max(5000),
+    attachmentIds: z.array(z.string().uuid()).max(ATTACHMENT_LIMITS.maxCount).default([]),
+  })
+  .refine((d) => d.body || d.attachmentIds.length, {
+    message: "Please write a message",
+    path: ["body"],
+  });
+const patchSchema = z.union([
+  z.object({ markRead: z.literal(true) }),
+  /** Staff decided the applicant's latest messages don't need an answer. */
+  z.object({ noReplyNeeded: z.literal(true) }),
+]);
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -40,7 +51,8 @@ export async function POST(req: Request, { params }: Ctx) {
       app,
       user.id,
       body.data.subject,
-      body.data.body,
+      body.data.body || "📎 See attached.",
+      body.data.attachmentIds,
     );
   } catch (err) {
     log.error("admin: message failed", err);
@@ -56,7 +68,7 @@ export async function POST(req: Request, { params }: Ctx) {
   return json({ ok: result.ok, error: result.error });
 }
 
-/** Mark the donor's replies as read. */
+/** Mark the donor's replies as read, or as not needing a reply. */
 export async function PATCH(req: Request, { params }: Ctx) {
   const admin = await getUserWith("edit_applications");
   if (!admin) return errorJson("Not found", 404);
@@ -64,9 +76,27 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if (!idSchema.safeParse(id).success) return errorJson("Not found", 404);
   const body = await parseBody(req, patchSchema);
   if (!body.ok) return body.res;
+  const now = new Date().toISOString();
+  if ("noReplyNeeded" in body.data) {
+    const { error } = await admin.supabase
+      .from("messages")
+      .update({ no_reply_needed_at: now, read_at: now })
+      .eq("application_id", id)
+      .eq("direction", "inbound")
+      .is("no_reply_needed_at", null);
+    if (error) {
+      log.error("admin: no-reply-needed failed — run 20261126000000_reply_tracking.sql", error);
+      return errorJson(
+        "Could not save. Run supabase/migrations/20261126000000_reply_tracking.sql first.",
+        500,
+      );
+    }
+    await audit(admin.user.id, "no_reply_needed", id, {});
+    return json({ ok: true });
+  }
   await admin.supabase
     .from("messages")
-    .update({ read_at: new Date().toISOString() })
+    .update({ read_at: now })
     .eq("application_id", id)
     .eq("direction", "inbound")
     .is("read_at", null);

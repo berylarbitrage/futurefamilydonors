@@ -45,6 +45,18 @@ export type Permission =
   | "manage_admins"
   | "view_catalog";
 
+/** Human labels for the Team page's permission table. */
+export const PERMISSION_LABELS: Record<Permission, string> = {
+  view_applications: "See all applications (incl. contact info & photos)",
+  edit_applications: "Decide (next step / decline), change status, notes, messages",
+  export: "Export CSV",
+  delete_applicant: "Delete an applicant's data",
+  manage_team: "Invite people & change roles",
+  manage_admins: "Grant or remove Admin access",
+  view_catalog: "Anonymous donor catalog",
+};
+export const PERMISSIONS = Object.keys(PERMISSION_LABELS) as Permission[];
+
 const MATRIX: Record<Role, readonly Permission[]> = {
   applicant: [],
   owner: [

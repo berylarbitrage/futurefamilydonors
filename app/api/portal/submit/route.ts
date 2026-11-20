@@ -1,4 +1,4 @@
-import { createElement } from "react";
+import { after } from "next/server";
 import { checkRateLimit, errorJson, json, parseBody } from "@/lib/api";
 import { getSessionUser } from "@/lib/auth";
 import { signatureSchema } from "@/lib/full-app";
@@ -10,11 +10,9 @@ import {
   withSection,
 } from "@/lib/portal";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendEmail } from "@/lib/email";
-import { env } from "@/lib/env";
 import { log } from "@/lib/log";
-import { siteUrl } from "@/config/site";
-import AdminNewApplicationEmail from "@/emails/admin-new-application";
+import { DISCLOSURE_TEXT, DISCLOSURE_VERSION } from "@/lib/legal/disclosure";
+import { notifyAdminFullApplication } from "@/lib/admin/notify";
 
 /** Sign and submit the full application. */
 export async function POST(req: Request) {
@@ -55,6 +53,15 @@ export async function POST(req: Request) {
       signed_at: now,
       submitted_at: now,
       completed_sections: completed,
+      // Record exactly which statements were accepted (kept with the answers).
+      sections: {
+        ...(full.sections ?? {}),
+        _attestation: {
+          accepted_at: now,
+          disclosure_version: DISCLOSURE_VERSION,
+          disclosure_text: DISCLOSURE_TEXT,
+        },
+      },
     })
     .eq("application_id", app.id);
   if (error) {
@@ -67,19 +74,7 @@ export async function POST(req: Request) {
     .update({ status: "full_app_submitted" })
     .eq("id", app.id);
 
-  const adminTo = env("ADMIN_NOTIFY_EMAIL");
-  if (adminTo) {
-    await sendEmail({
-      to: adminTo,
-      subject: `Action needed: review ${app.first_name} ${app.last_name.charAt(0)}.'s full application`,
-      react: createElement(AdminNewApplicationEmail, {
-        name: `${app.first_name} ${app.last_name}`,
-        donorType: app.donor_type,
-        eligible: app.eligible,
-        adminUrl: siteUrl(`/admin/applications/${app.id}`),
-        kind: "full application",
-      }),
-    });
-  }
+  // Full details (every answer + photos/video/voice) go to the team inbox.
+  after(() => notifyAdminFullApplication(createAdminClient(), app.id));
   return json({ ok: true });
 }

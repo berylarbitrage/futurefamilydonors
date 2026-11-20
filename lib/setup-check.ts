@@ -165,6 +165,81 @@ export async function runSetupChecks(
         : "Found.",
     );
 
+    const intl = await db
+      .from("applications")
+      .select("country,region,city,postal_code,prescreen_details")
+      .limit(1);
+    add(
+      "db_international",
+      "International / follow-up columns",
+      intl.error ? "fail" : "ok",
+      intl.error
+        ? "Missing — run supabase/migrations/20261110000000_international_followups.sql."
+        : "Found.",
+    );
+
+    const setupLinks = await db
+      .from("account_setup_tokens")
+      .select("token_hash", { count: "exact", head: true });
+    add(
+      "db_account_setup",
+      "Registration links (create-your-password)",
+      setupLinks.error ? "fail" : "ok",
+      setupLinks.error
+        ? 'Missing — run supabase/migrations/20261120000000_account_setup.sql. Until then "Move to next step" can\'t send registration links.'
+        : "Found.",
+    );
+
+    const docs = await db.from("documents").select("id", { count: "exact", head: true });
+    add(
+      "db_documents",
+      "Supporting documents (optional uploads)",
+      docs.error ? "fail" : "ok",
+      docs.error
+        ? "Missing — run supabase/migrations/20261122000000_documents.sql. Until then applicants can't upload documents."
+        : "Found.",
+    );
+
+    const att = await db.from("message_attachments").select("id", { count: "exact", head: true });
+    add(
+      "db_message_attachments",
+      "Message attachments (files & pictures)",
+      att.error ? "fail" : "ok",
+      att.error
+        ? "Missing — run supabase/migrations/20261123000000_message_attachments.sql. Until then messages can't carry attachments."
+        : "Found.",
+    );
+
+    const codes = await db.from("email_codes").select("id", { count: "exact", head: true });
+    add(
+      "db_email_codes",
+      "Email verification codes",
+      codes.error ? "fail" : "ok",
+      codes.error
+        ? "Missing — run supabase/migrations/20261124000000_email_codes.sql. Until then forms work without a code."
+        : "Found.",
+    );
+
+    const tr = await db.from("translations").select("lang", { count: "exact", head: true });
+    add(
+      "db_translations",
+      "Translation cache",
+      tr.error ? "warn" : "ok",
+      tr.error
+        ? "Missing — run supabase/migrations/20261125000000_translations.sql. Until then every page is translated again (slower, costs more)."
+        : "Found.",
+    );
+
+    const rem = await db.from("reminders").select("id", { count: "exact", head: true });
+    add(
+      "db_reminders",
+      "Automatic reminders log",
+      rem.error ? "warn" : "ok",
+      rem.error
+        ? "Missing — run supabase/migrations/20261127000000_reminders.sql. Until then no applicant reminders are sent."
+        : "Found.",
+    );
+
     const roles = await db.rpc("is_staff");
     add(
       "db_roles",
@@ -244,6 +319,26 @@ export async function runSetupChecks(
         : "Accepted (and RLS hides all rows from anonymous users).",
     );
   }
+
+  // ---- AI translation (Language menu)
+  add(
+    "anthropic",
+    "ANTHROPIC_API_KEY (AI translation)",
+    has("ANTHROPIC_API_KEY") ? "ok" : "warn",
+    has("ANTHROPIC_API_KEY")
+      ? "Set — the Language menu uses natural AI translations."
+      : "Not set — the Language menu falls back to Google Translate.",
+  );
+
+  // ---- Daily reminders (Vercel Cron)
+  add(
+    "cron",
+    "CRON_SECRET (daily summary & reminders)",
+    has("CRON_SECRET") ? "ok" : "warn",
+    has("CRON_SECRET")
+      ? "Set — the daily job runs every morning."
+      : "Not set — no daily summary email and no automatic applicant reminders.",
+  );
 
   // ---- Email
   add(

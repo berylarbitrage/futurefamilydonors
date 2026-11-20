@@ -229,6 +229,8 @@ export const applyRequestSchema = z.object({
   data: z.record(z.string(), z.unknown()),
   turnstileToken: z.string().optional(),
   website: z.string().optional(), // honeypot — must be empty
+  /** Token from the email verification code step. */
+  emailProof: z.string().max(200).optional(),
   /** Photos the browser will upload once the application is stored (3–5). */
   photos: z
     .array(

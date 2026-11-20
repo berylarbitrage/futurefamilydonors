@@ -12,6 +12,7 @@ import { SITE } from "@/config/site";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { MessageThread } from "@/components/messages/thread";
 import { MessageReply } from "@/components/portal/message-reply";
+import { attachmentsByMessage } from "@/lib/messages/attachments";
 
 export const metadata: Metadata = { title: "Applicant Portal" };
 
@@ -34,6 +35,11 @@ export default async function PortalPage() {
         .eq("application_id", app.id)
         .order("created_at")
     : { data: null };
+  // Files/pictures on those messages (RLS: only ones on the applicant's own thread).
+  const attachments = await attachmentsByMessage(
+    supabase,
+    (messages ?? []).map((m) => m.id as string),
+  );
   // Applicants can't update messages under RLS; mark coordinator messages as read server-side.
   if (app && messages?.some((m) => m.direction === "outbound")) {
     await createAdminClient()
@@ -90,7 +96,13 @@ export default async function PortalPage() {
       {app && (
         <Card className="max-w-2xl" id="messages">
           <h2 className="mb-4 text-xl font-extrabold">Messages</h2>
-          <MessageThread viewer="applicant" messages={messages ?? []} />
+          <MessageThread
+            viewer="applicant"
+            messages={(messages ?? []).map((m) => ({
+              ...m,
+              attachments: attachments.get(m.id as string) ?? [],
+            }))}
+          />
           <div className="border-ink mt-6 border-t-3 pt-6">
             <MessageReply />
             <p className="mt-3 text-xs font-medium">

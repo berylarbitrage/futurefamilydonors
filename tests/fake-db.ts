@@ -15,6 +15,10 @@ export class FakeDb {
         data: paths.map((path) => ({ path, signedUrl: `https://cdn.test/${path}?sig=1` })),
         error: null,
       }),
+      createSignedUrl: async (path: string, _ttl: number) => ({
+        data: { signedUrl: `https://cdn.test/${path}?sig=1` },
+        error: null,
+      }),
       createSignedUploadUrl: async (path: string) => ({
         data: { path, token: `tok-${path}` },
         error: null,
@@ -69,9 +73,11 @@ class Query implements PromiseLike<{ data: unknown; error: null; count?: number 
     this.payload = p;
     return this;
   }
-  upsert(p: Row | Row[]) {
+  private conflictKeys: string[] | null = null;
+  upsert(p: Row | Row[], opts?: { onConflict?: string }) {
     this.op = "upsert";
     this.payload = p;
+    this.conflictKeys = opts?.onConflict ? opts.onConflict.split(",") : null;
     return this;
   }
   delete() {
@@ -128,8 +134,8 @@ class Query implements PromiseLike<{ data: unknown; error: null; count?: number 
     if (this.op === "upsert") {
       const items = Array.isArray(this.payload) ? this.payload : [this.payload!];
       for (const p of items) {
-        const key = "application_id" in p ? "application_id" : "id";
-        const existing = rows.find((r) => r[key] === p[key]);
+        const keys = this.conflictKeys ?? ["application_id" in p ? "application_id" : "id"];
+        const existing = rows.find((r) => keys.every((k) => r[k] === p[k]));
         if (existing) Object.assign(existing, p);
         else rows.push({ sections: {}, completed_sections: [], ...p });
       }

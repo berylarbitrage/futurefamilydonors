@@ -28,6 +28,8 @@ export default async function CatalogLoginPage({
       title="Donor catalog sign in"
       intro="For intended parents and partner clinics. Access is by invitation — enter the email we invited and we'll send a one-time sign-in link."
       next="/catalog"
+      allowPassword
+      passwordArea="portal"
       error={sp.error}
       wrongAccount={
         user ? `You're signed in as ${user.email}, which doesn't have catalog access.` : null

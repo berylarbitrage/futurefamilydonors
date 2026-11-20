@@ -1,13 +1,22 @@
 import { z } from "zod";
 import { STATUSES } from "@/lib/admin/constants";
+import { STAGE_IDS, stageStatuses } from "@/lib/admin/stages";
 import { US_STATE_CODES } from "@/config/us-states";
 
 export const filtersSchema = z.object({
   type: z.enum(["egg", "sperm"]).optional().catch(undefined),
   status: z.enum(STATUSES).optional().catch(undefined),
+  /** Pipeline stage (groups of statuses), from the board on the admin home page. */
+  stage: z.enum(STAGE_IDS).optional().catch(undefined),
   eligible: z.enum(["yes", "no"]).optional().catch(undefined),
   state: z.enum(US_STATE_CODES).optional().catch(undefined),
   q: z.string().trim().max(100).optional().catch(undefined),
+  /** Referral code: applicants who came through this referrer's link. */
+  ref: z
+    .string()
+    .regex(/^[A-Za-z0-9]{4,16}$/)
+    .optional()
+    .catch(undefined),
   page: z.coerce.number().int().min(1).max(10_000).optional().catch(undefined),
 });
 export type Filters = z.infer<typeof filtersSchema>;
@@ -30,6 +39,7 @@ export function sanitizeSearch(q: string): string {
 /** Minimal interface of the supabase query builder we use, for reuse across list + export. */
 export interface Filterable<T> {
   eq(col: string, v: unknown): T;
+  in(col: string, v: readonly unknown[]): T;
   or(filter: string): T;
 }
 
@@ -37,8 +47,10 @@ export function applyFilters<T extends Filterable<T>>(query: T, f: Filters): T {
   let q = query;
   if (f.type) q = q.eq("donor_type", f.type);
   if (f.status) q = q.eq("status", f.status);
+  else if (f.stage) q = q.in("status", stageStatuses(f.stage));
   if (f.eligible) q = q.eq("eligible", f.eligible === "yes");
   if (f.state) q = q.eq("state", f.state);
+  if (f.ref) q = q.eq("referral_code", f.ref);
   if (f.q) {
     const term = sanitizeSearch(f.q);
     if (term) {
