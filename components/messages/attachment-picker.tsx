@@ -12,6 +12,7 @@ import {
   type AttachmentInfo,
 } from "@/lib/attachments";
 import { Button } from "@/components/ui/button";
+import { HEIC_HINT, withKnownType } from "@/lib/file-type";
 
 /**
  * "Attach files or pictures" for a message box. Files upload straight away;
@@ -45,7 +46,10 @@ export function AttachmentPicker({
     return { res, j: (await res.json().catch(() => ({}))) as Record<string, unknown> };
   };
 
-  const uploadOne = async (file: File): Promise<AttachmentInfo> => {
+  const uploadOne = async (picked: File): Promise<AttachmentInfo> => {
+    const file = await withKnownType(picked);
+    if (file.type === "image/heic" || file.type === "image/heif")
+      throw new Error(`${file.name}: ${HEIC_HINT}`);
     if (!isAllowedAttachment(file.type) || file.size > ATTACHMENT_LIMITS.maxBytes)
       throw new Error(`${file.name}: ${ATTACHMENT_TYPE_ERROR}`);
     const s = await post({ action: "sign", contentType: file.type, size: file.size });

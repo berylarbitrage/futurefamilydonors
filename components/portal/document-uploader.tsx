@@ -5,6 +5,7 @@ import { useState } from "react";
 import { CheckCircle2, FileText, Trash2, Upload } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { DOC_LIMITS, docTypesFor } from "@/lib/documents";
+import { HEIC_HINT, withKnownType } from "@/lib/file-type";
 import type { DonorType } from "@/config/eligibility";
 import { Button } from "@/components/ui/button";
 
@@ -44,8 +45,11 @@ export function DocumentUploader({
     return { res, j: (await res.json().catch(() => ({}))) as Record<string, string> };
   };
 
-  const upload = async (docType: string, file: File) => {
+  const upload = async (docType: string, picked: File) => {
     setError(null);
+    const file = await withKnownType(picked);
+    if (file.type === "image/heic" || file.type === "image/heif")
+      return setError({ type: docType, text: HEIC_HINT });
     if (
       !DOC_LIMITS.mimeTypes.includes(file.type as "application/pdf") ||
       file.size > DOC_LIMITS.maxBytes

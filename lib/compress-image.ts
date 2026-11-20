@@ -7,7 +7,7 @@
 export const MAX_SIDE = 2000;
 const QUALITY = 0.85;
 
-export async function compressImage(file: File): Promise<File> {
+export async function compressImage(file: File, opts: { forceJpeg?: boolean } = {}): Promise<File> {
   if (typeof window === "undefined" || typeof createImageBitmap !== "function") return file;
   try {
     // "from-image" keeps phone photos the right way up (EXIF orientation).
@@ -27,7 +27,7 @@ export async function compressImage(file: File): Promise<File> {
     const blob = await new Promise<Blob | null>((resolve) =>
       canvas.toBlob(resolve, "image/jpeg", QUALITY),
     );
-    if (!blob || blob.size >= file.size) return file;
+    if (!blob || (!opts.forceJpeg && blob.size >= file.size)) return file;
     const name = file.name.replace(/\.[^.]+$/, "") + ".jpg";
     return new File([blob], name, { type: "image/jpeg", lastModified: Date.now() });
   } catch {
