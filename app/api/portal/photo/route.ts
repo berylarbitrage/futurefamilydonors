@@ -1,21 +1,41 @@
 import { z } from "zod";
 import { checkRateLimit, errorJson, json, parseBody } from "@/lib/api";
 import { getSessionUser } from "@/lib/auth";
-import { PHOTO_LIMITS } from "@/lib/full-app";
+import { AUDIO_LIMITS, isPhotoKind, mediaExt, PHOTO_LIMITS, VIDEO_LIMITS } from "@/lib/full-app";
 import { getFullApp, getOwnApplication, photosComplete, withSection } from "@/lib/portal";
 import { createAdminClient, PHOTO_BUCKET } from "@/lib/supabase/admin";
 import { log } from "@/lib/log";
 
+const KINDS = ["childhood", "recent", "video", "audio"] as const;
+type Kind = (typeof KINDS)[number];
+
+/** Allowed types, size and a friendly error per kind of upload. */
+const RULES: Record<Kind, { mimeTypes: readonly string[]; maxBytes: number; error: string }> = {
+  childhood: {
+    ...PHOTO_LIMITS,
+    error: "Photos must be JPG or PNG and 5 MB or smaller.",
+  },
+  recent: {
+    ...PHOTO_LIMITS,
+    error: "Photos must be JPG or PNG and 5 MB or smaller.",
+  },
+  video: { ...VIDEO_LIMITS, error: "Videos must be MP4, MOV or WebM and 50 MB or smaller." },
+  audio: {
+    ...AUDIO_LIMITS,
+    error: "Voice recordings must be MP3, M4A, WAV, AAC, OGG or WebM and 20 MB or smaller.",
+  },
+};
+
 const bodySchema = z.discriminatedUnion("action", [
   z.object({
     action: z.literal("sign"),
-    kind: z.enum(["childhood", "recent"]),
-    contentType: z.enum(PHOTO_LIMITS.mimeTypes),
-    size: z.number().int().positive().max(PHOTO_LIMITS.maxBytes, "Photos must be 5 MB or smaller"),
+    kind: z.enum(KINDS),
+    contentType: z.string().max(100),
+    size: z.number().int().positive(),
   }),
   z.object({
     action: z.literal("confirm"),
-    kind: z.enum(["childhood", "recent"]),
+    kind: z.enum(KINDS),
     path: z.string().max(200),
   }),
   z.object({ action: z.literal("delete"), id: z.string().uuid() }),
@@ -38,7 +58,7 @@ async function syncPhotoCompletion(
 }
 
 /**
- * Photo upload flow:
+ * Photo / video / voice upload flow:
  *   1. sign    -> server checks limits, returns a one-time signed upload URL
  *   2. browser uploads directly to the private bucket
  *   3. confirm -> server verifies the object and records it
@@ -58,17 +78,28 @@ export async function POST(req: Request) {
   const service = createAdminClient();
   const b = body.data;
 
-  if (b.action === "sign") {
-    const { count } = await supabase
+  // How many of this kind are already there? Photos share one limit; one video, one recording.
+  const isFull = async (kind: Kind) => {
+    const { data: rows } = await supabase
       .from("photos")
-      .select("id", { count: "exact", head: true })
-      .eq("application_id", app.id)
-      .neq("kind", "video");
-    if ((count ?? 0) >= PHOTO_LIMITS.maxCount) {
-      return errorJson(`You can upload up to ${PHOTO_LIMITS.maxCount} photos.`, 400);
-    }
-    const ext = b.contentType === "image/png" ? "png" : "jpg";
-    const path = `${app.id}/${crypto.randomUUID()}.${ext}`;
+      .select("kind")
+      .eq("application_id", app.id);
+    const kinds = ((rows ?? []) as { kind: string }[]).map((r) => r.kind);
+    return isPhotoKind(kind)
+      ? kinds.filter(isPhotoKind).length >= PHOTO_LIMITS.maxCount
+      : kinds.includes(kind);
+  };
+  const fullError = (kind: Kind) =>
+    isPhotoKind(kind)
+      ? `You can upload up to ${PHOTO_LIMITS.maxCount} photos.`
+      : `You already added a ${kind === "video" ? "video" : "voice recording"}. Remove it first to replace it.`;
+
+  if (b.action === "sign") {
+    const rule = RULES[b.kind];
+    if (!rule.mimeTypes.includes(b.contentType) || b.size > rule.maxBytes)
+      return errorJson(rule.error, 400);
+    if (await isFull(b.kind)) return errorJson(fullError(b.kind), 400);
+    const path = `${app.id}/${crypto.randomUUID()}.${mediaExt(b.contentType)}`;
     const { data, error } = await service.storage.from(PHOTO_BUCKET).createSignedUploadUrl(path);
     if (error || !data) {
       log.error("portal: signed upload url failed", error);
@@ -78,30 +109,29 @@ export async function POST(req: Request) {
   }
 
   if (b.action === "confirm") {
+    const rule = RULES[b.kind];
+    const exts = [...new Set(rule.mimeTypes.map(mediaExt))].join("|");
     // Path must be inside this applicant's folder.
     const [folder, file, ...rest] = b.path.split("/");
-    if (folder !== app.id || !file || rest.length || !/^[0-9a-f-]{36}\.(jpg|png)$/.test(file)) {
+    if (
+      folder !== app.id ||
+      !file ||
+      rest.length ||
+      !new RegExp(`^[0-9a-f-]{36}\\.(${exts})$`).test(file)
+    ) {
       return errorJson("Invalid path", 400);
     }
     const { data: objs } = await service.storage.from(PHOTO_BUCKET).list(app.id, { search: file });
     const obj = objs?.find((o) => o.name === file);
     const meta = obj?.metadata as { size?: number; mimetype?: string } | undefined;
     if (!obj || !meta) return errorJson("Upload not found", 400);
-    if (
-      (meta.size ?? 0) > PHOTO_LIMITS.maxBytes ||
-      !PHOTO_LIMITS.mimeTypes.includes(meta.mimetype as "image/jpeg")
-    ) {
+    if ((meta.size ?? 0) > rule.maxBytes || !rule.mimeTypes.includes(meta.mimetype ?? "")) {
       await service.storage.from(PHOTO_BUCKET).remove([b.path]);
-      return errorJson("Photos must be JPG or PNG and 5 MB or smaller", 400);
+      return errorJson(rule.error, 400);
     }
-    const { count } = await supabase
-      .from("photos")
-      .select("id", { count: "exact", head: true })
-      .eq("application_id", app.id)
-      .neq("kind", "video");
-    if ((count ?? 0) >= PHOTO_LIMITS.maxCount) {
+    if (await isFull(b.kind)) {
       await service.storage.from(PHOTO_BUCKET).remove([b.path]);
-      return errorJson(`You can upload up to ${PHOTO_LIMITS.maxCount} photos.`, 400);
+      return errorJson(fullError(b.kind), 400);
     }
     const { data: row, error } = await supabase
       .from("photos")

@@ -48,6 +48,7 @@ process.env.SUPABASE_SERVICE_ROLE_KEY = "service";
 process.env.ADMIN_NOTIFY_EMAIL = "admin@example.com";
 
 const { POST } = await import("@/app/api/apply/route");
+const { createEmailProof } = await import("@/lib/email-verification");
 
 // ---- Helpers -------------------------------------------------------------
 let ipCounter = 0;
@@ -86,6 +87,10 @@ function req(body: unknown) {
   ipCounter++;
   // Every pre-screen sends 3–5 photos unless a test says otherwise.
   if (body && typeof body === "object" && !("photos" in body)) body = { ...body, photos: PHOTOS };
+  // …and has verified its email with a code, unless a test says otherwise.
+  const b = body as { data?: { email?: string }; emailProof?: string };
+  if (b?.data?.email && !("emailProof" in b))
+    body = { ...b, emailProof: createEmailProof(b.data.email.toLowerCase(), "apply") };
   return new Request("http://localhost/api/apply", {
     method: "POST",
     headers: { "content-type": "application/json", "x-forwarded-for": `10.0.0.${ipCounter}` },
@@ -189,16 +194,15 @@ describe("POST /api/apply", () => {
     expect(apps()).toHaveLength(0);
   });
 
-  it("stores an eligible application and sends eligible + admin emails", async () => {
+  it("stores the application and waits for staff review (no automatic invite)", async () => {
     const res = await POST(req({ donorType: "egg", data: eggData() }));
     expect(res.status).toBe(200);
-    // New applicant: signed in and sent straight on to the full application.
-    expect(await res.json()).toMatchObject({
-      ok: true,
-      eligible: true,
-      continueUrl: "/portal/application?welcome=1",
-    });
-    expect(signedIn).toEqual(["jane@example.com"]);
+    const body = await res.json();
+    expect(body).toMatchObject({ ok: true });
+    // Nobody is signed in, invited or told their result automatically.
+    expect(body).not.toHaveProperty("continueUrl");
+    expect(body).not.toHaveProperty("eligible");
+    expect(signedIn).toEqual([]);
     expect(apps()).toHaveLength(1);
     expect(apps()[0]).toMatchObject({
       eligible: true,
@@ -208,12 +212,14 @@ describe("POST /api/apply", () => {
       country: "United States",
       state: "IL",
       zip: "60601",
-      user_id: "user-1",
-      status: "full_app_pending",
     });
+    expect(apps()[0]!.user_id).toBeUndefined(); // account is created when staff move them on
+    expect(apps()[0]!.status ?? "new").toBe("new");
     for (const t of afterTasks) await t();
-    // The admin email follows once the photos are uploaded (/api/apply/photos).
+    // Applicant gets "we've received your application"; the admin email follows
+    // once the photos are uploaded (/api/apply/photos).
     expect(sent.map((s) => s.to)).toEqual(["jane@example.com"]);
+    expect(sent[0]!.subject).toMatch(/received your application/);
   });
 
   it("emails the admin straight away when no photo upload links could be made", async () => {
@@ -236,7 +242,7 @@ describe("POST /api/apply", () => {
   it("never auto-signs-in an existing account (email backup link only)", async () => {
     existingUser = true;
     const res = await POST(req({ donorType: "egg", data: eggData() }));
-    expect(await res.json()).toMatchObject({ ok: true, eligible: true });
+    expect(await res.json()).toMatchObject({ ok: true });
     expect(signedIn).toEqual([]);
     for (const t of afterTasks) await t();
     expect(sent[0]).toMatchObject({ to: "jane@example.com" });
@@ -321,7 +327,7 @@ describe("POST /api/apply", () => {
 
   it("stores an ineligible application with reasons", async () => {
     const res = await POST(req({ donorType: "egg", data: eggData({ smoker: "yes" }) }));
-    expect(await res.json()).toMatchObject({ ok: true, eligible: false });
+    expect(await res.json()).toMatchObject({ ok: true });
     expect(apps()[0]).toMatchObject({ eligible: false, fail_reasons: ["smoker"] });
     for (const t of afterTasks) await t();
     expect(sent[0]!.subject).toMatch(/received your application/);
@@ -331,7 +337,7 @@ describe("POST /api/apply", () => {
     const res = await POST(
       req({ donorType: "egg", data: { ...eggData({ weightLb: 250 }), eligible: true, bmi: 20 } }),
     );
-    expect(await res.json()).toMatchObject({ eligible: false });
+    expect(res.status).toBe(200);
     expect(apps()[0]).toMatchObject({ eligible: false, fail_reasons: ["bmi"] });
   });
 
@@ -472,5 +478,12 @@ describe("POST /api/apply", () => {
     } finally {
       ensureUserFails = false;
     }
+  });
+
+  it("requires a verified email (code) before storing anything", async () => {
+    const res = await POST(req({ donorType: "egg", data: eggData(), emailProof: "123.bad" }));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ code: "email_unverified" });
+    expect(apps()).toHaveLength(0);
   });
 });

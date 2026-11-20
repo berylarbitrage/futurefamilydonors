@@ -13,6 +13,7 @@ export function LoginCard({
   error,
   wrongAccount,
   allowPassword = false,
+  passwordArea = "admin",
 }: {
   icon: LucideIcon;
   area: string;
@@ -23,6 +24,8 @@ export function LoginCard({
   wrongAccount?: string | null;
   /** Show email + password sign-in first (staff), with the emailed link as a fallback. */
   allowPassword?: boolean;
+  /** Where the password form goes after sign-in (see PasswordLoginForm). */
+  passwordArea?: "admin" | "portal";
 }) {
   return (
     <div className="bg-background flex min-h-dvh items-center justify-center px-4 py-16">
@@ -56,7 +59,7 @@ export function LoginCard({
         )}
         {allowPassword ? (
           <>
-            <PasswordLoginForm next={next} />
+            <PasswordLoginForm next={next} area={passwordArea} />
             <p className="text-muted my-5 text-center text-xs tracking-widest uppercase">
               or get a sign-in link by email
             </p>

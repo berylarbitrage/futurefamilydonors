@@ -13,6 +13,7 @@ import {
   type Role,
 } from "@/lib/roles";
 import InviteEmail from "@/emails/invite";
+import { createSetupLink, LINK_TTL_DAYS } from "@/lib/account-setup";
 
 export interface Member {
   id: string;
@@ -54,18 +55,31 @@ export async function listMembers(): Promise<Member[]> {
   }));
 }
 
-/** Create (or find) the account, set its role and email a sign-in link. */
+/**
+ * Create (or find) the account, set its role and email a one-time
+ * "create your password" link (falls back to a sign-in link if the
+ * account_setup migration hasn't been run yet).
+ */
 export async function inviteMember(email: string, role: AssignableRole) {
   const db = createAdminClient();
   const userId = await ensureUser(email);
   const { error } = await db.from("profiles").upsert({ id: userId, role });
   if (error) throw error;
-  const url = await createMagicLink(email, homeFor(role));
+  let url: string;
+  let setPassword = true;
+  try {
+    url = await createSetupLink({ userId, purpose: "team", nextPath: homeFor(role) });
+  } catch {
+    url = await createMagicLink(email, homeFor(role));
+    setPassword = false;
+  }
   const sent = await sendEmailResult({
     to: email,
     subject: `Your ${SITE.brand} access`,
     react: createElement(InviteEmail, {
       url,
+      setPassword,
+      validDays: LINK_TTL_DAYS,
       roleLabel: ROLE_LABELS[role],
       loginUrl: siteUrl(loginFor(role)),
     }),

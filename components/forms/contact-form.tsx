@@ -11,22 +11,28 @@ import { NativeSelect } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Honeypot } from "@/components/forms/honeypot";
+import { EmailVerification } from "@/components/forms/email-verification";
 
 export function ContactForm() {
   const [status, setStatus] = useState<"idle" | "sent" | "error">("idle");
   const [serverError, setServerError] = useState<string | null>(null);
+  const [emailProof, setEmailProof] = useState<string | null>(null);
+  const [needsCode, setNeedsCode] = useState(false);
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<ContactInput>({ resolver: zodResolver(contactSchema) });
+  const email = watch("email") ?? "";
 
   const onSubmit = async (data: ContactInput) => {
     setServerError(null);
+    if (!emailProof) return setNeedsCode(true);
     const res = await fetch("/api/contact", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...data, emailProof }),
     });
     if (res.ok) setStatus("sent");
     else {
@@ -68,6 +74,16 @@ export function ContactForm() {
           {...register("email")}
         />
       </Field>
+      <EmailVerification
+        email={email}
+        purpose="contact"
+        proof={emailProof}
+        onProof={(p) => {
+          setEmailProof(p);
+          if (p) setNeedsCode(false);
+        }}
+        error={needsCode ? "Please verify your email before sending." : undefined}
+      />
       <Field id="topic" label="Topic" required error={errors.topic?.message}>
         <NativeSelect
           id="topic"

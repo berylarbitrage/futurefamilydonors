@@ -36,6 +36,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { NativeSelect } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { YesNo } from "@/components/forms/yes-no";
+import { EmailVerification } from "@/components/forms/email-verification";
 import { Honeypot } from "@/components/forms/honeypot";
 import { Turnstile, type TurnstileStatus } from "@/components/forms/turnstile";
 import { SchoolCombobox } from "@/components/forms/school-combobox";
@@ -97,6 +98,8 @@ export function PrescreenForm({
   const [step, setStep] = useState(0);
   const [blocked, setBlocked] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [emailProof, setEmailProof] = useState<string | null>(null);
+  const [needsCode, setNeedsCode] = useState(false);
   const [token, setToken] = useState("");
   const [tsStatus, setTsStatus] = useState<TurnstileStatus>("loading");
   const [tsReset, setTsReset] = useState(0);
@@ -285,6 +288,11 @@ export function PrescreenForm({
       document.getElementById("photos-hint")?.scrollIntoView({ block: "center" });
       return;
     }
+    if (!emailProof) {
+      setNeedsCode(true);
+      document.getElementById("email")?.scrollIntoView({ block: "center" });
+      return;
+    }
     if (turnstileSiteKey && !token) {
       setServerError(
         tsStatus === "error"
@@ -303,6 +311,7 @@ export function PrescreenForm({
           data: values,
           turnstileToken: token,
           website: honeypot,
+          emailProof,
           photos: photos.map((f) => ({ contentType: f.type, size: f.size })),
           ...(video ? { video: { contentType: video.type, size: video.size } } : {}),
         }),
@@ -334,6 +343,10 @@ export function PrescreenForm({
         } catch {}
         setBlocked(true);
         return;
+      }
+      if (body.code === "email_unverified") {
+        setEmailProof(null);
+        setNeedsCode(true);
       }
       if (body.code === "duplicate" || res.status === 400 || res.status === 429) {
         setServerError(body.error ?? "Please check your answers and try again.");
@@ -379,13 +392,8 @@ export function PrescreenForm({
         }).catch(() => undefined);
       }
     }
-    if (body.continueUrl) {
-      // Signed in: continue straight into the full application (full page load
-      // so the new session cookie is used everywhere).
-      window.location.assign(body.continueUrl);
-      return;
-    }
-    router.push(`/apply/result?status=${body.eligible ? "eligible" : "ineligible"}&type=${type}`);
+    // Every application is reviewed by our team first.
+    router.push(`/apply/result?status=received&type=${type}`);
   };
 
   if (blocked) {
@@ -964,6 +972,16 @@ export function PrescreenForm({
                 {...register("email")}
               />
             </Field>
+            <EmailVerification
+              email={watch("email") ?? ""}
+              purpose="apply"
+              proof={emailProof}
+              onProof={(p) => {
+                setEmailProof(p);
+                if (p) setNeedsCode(false);
+              }}
+              error={needsCode ? "Please verify your email before submitting." : undefined}
+            />
             <Field id="phone" label="Mobile phone" required error={err("phone")}>
               <Input
                 id="phone"
@@ -1036,9 +1054,9 @@ export function PrescreenForm({
 
         {step === 2 && (
           <p className="text-muted text-xs">
-            If you pre-qualify, you&apos;ll continue straight to the full application here — your
-            progress is saved automatically after every step. We&apos;ll also email you a
-            &ldquo;continue&rdquo; link as a backup.
+            After you submit, our team personally reviews your answers and emails you about the next
+            step — usually within a few business days. Your progress on this form is saved
+            automatically after every step.
           </p>
         )}
 

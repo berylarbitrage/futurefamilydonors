@@ -6,6 +6,8 @@ import { env } from "@/lib/env";
 import { SITE, siteUrl } from "@/config/site";
 import { fillTemplate } from "@/lib/messages/templates";
 import CoordinatorMessageEmail from "@/emails/coordinator-message";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { linkAttachments, signedAttachmentLinks } from "@/lib/messages/attachments";
 
 export interface MessageTarget {
   id: string;
@@ -29,6 +31,7 @@ export async function sendCoordinatorMessage(
   authorId: string,
   rawSubject: string,
   rawBody: string,
+  attachmentIds: string[] = [],
 ) {
   const vars = templateVars(app);
   const subject = fillTemplate(rawSubject, vars).trim();
@@ -41,6 +44,16 @@ export async function sendCoordinatorMessage(
     .single();
   if (error || !row) throw error ?? new Error("message insert failed");
 
+  // Files/pictures the coordinator attached: link them and send them along.
+  const service = createAdminClient();
+  const files = await linkAttachments(service, {
+    applicationId: app.id,
+    userId: authorId,
+    messageId: row.id as string,
+    ids: attachmentIds,
+  });
+  const attachments = await signedAttachmentLinks(service, files);
+
   const result = await sendEmailResult({
     to: app.email,
     subject,
@@ -50,6 +63,7 @@ export async function sendCoordinatorMessage(
       portalUrl: app.user_id ? siteUrl("/portal") : undefined,
     }),
     replyTo: env("ADMIN_NOTIFY_EMAIL") ?? SITE.contactEmail,
+    attachments,
   });
   await db
     .from("messages")

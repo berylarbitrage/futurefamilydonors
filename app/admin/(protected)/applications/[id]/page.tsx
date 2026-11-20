@@ -1,18 +1,20 @@
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FileText } from "lucide-react";
 import { requireStaff } from "@/lib/auth";
 import { can } from "@/lib/roles";
 import { audit } from "@/lib/admin/audit";
 import { STATUS_LABELS, type Status } from "@/lib/admin/constants";
 import { createAdminClient, PHOTO_BUCKET } from "@/lib/supabase/admin";
 import { ageOn } from "@/lib/dates";
+import { docTypeLabel } from "@/lib/documents";
 import { FAIL_REASON_LABELS, type FailReason } from "@/lib/eligibility";
 import {
   completionPercent,
   FORM_SECTIONS,
   isFieldVisible,
+  isPhotoKind,
   sectionFields,
   SECTION_TITLES,
 } from "@/lib/full-app";
@@ -23,11 +25,15 @@ import { StatusForm } from "@/components/admin/status-form";
 import { NoteForm } from "@/components/admin/note-form";
 import { DeleteApplicantButton } from "@/components/admin/delete-button";
 import { MessageComposer } from "@/components/admin/message-composer";
-import { ReviewActions } from "@/components/admin/review-actions";
-import { PrescreenDecision } from "@/components/admin/prescreen-decision";
+import { cn } from "@/lib/utils";
+import { DecisionPanel } from "@/components/admin/decision-panel";
+import { buildTimeline } from "@/lib/admin/timeline";
 import { MarkRepliesRead } from "@/components/admin/mark-read";
 import { MessageThread } from "@/components/messages/thread";
 import { templateVars } from "@/lib/messages/send";
+import { attachmentsByMessage } from "@/lib/messages/attachments";
+import { awaitingReply, waitingFor } from "@/lib/admin/awaiting";
+import { NoReplyNeededButton } from "@/components/admin/no-reply-needed";
 
 const SIGNED_URL_TTL = 600; // 10 minutes
 
@@ -51,6 +57,7 @@ export default async function ApplicationDetailPage({
     { data: referrer },
     { data: history },
     { data: messages },
+    { data: documents },
   ] = await Promise.all([
     supabase.from("full_applications").select("*").eq("application_id", id).maybeSingle(),
     supabase.from("photos").select("*").eq("application_id", id).order("created_at"),
@@ -66,12 +73,27 @@ export default async function ApplicationDetailPage({
       .from("audit_log")
       .select("action,meta,created_at,actor_id")
       .eq("target_id", id)
-      .in("action", ["update_status"])
+      .in("action", [
+        "update_status",
+        "decision_next_step",
+        "decision_decline",
+        "decision_screening",
+        "no_reply_needed",
+        "reminder_sent",
+        "account_registered",
+        "add_note",
+      ])
       .order("created_at", { ascending: false })
-      .limit(20),
+      .limit(100),
     supabase
       .from("messages")
       .select("id,direction,subject,body,created_at,email_status,email_error,author_id,read_at")
+      .eq("application_id", id)
+      .order("created_at"),
+    // Optional supporting documents (empty until 20261122000000_documents.sql is run).
+    supabase
+      .from("documents")
+      .select("id,doc_type,file_name,size_bytes,created_at")
       .eq("application_id", id)
       .order("created_at"),
   ]);
@@ -88,6 +110,16 @@ export default async function ApplicationDetailPage({
     );
     urls?.forEach((u) => u.path && u.signedUrl && signed.set(u.path, u.signedUrl));
   }
+
+  // Is the applicant waiting for an answer? (Their latest messages, unanswered
+  // and not marked "No reply needed".)
+  const waitingSince = (await awaitingReply(supabase, [id])).get(id)?.since ?? null;
+
+  // Files/pictures attached to messages.
+  const attachments = await attachmentsByMessage(
+    supabase,
+    (messages ?? []).map((m) => m.id as string),
+  );
 
   // Note / history authors.
   const authorIds = [
@@ -112,7 +144,18 @@ export default async function ApplicationDetailPage({
   ).length;
   const sections = (full?.sections ?? {}) as Record<string, Record<string, unknown>>;
   const completed = (full?.completed_sections ?? []) as string[];
+  const attestation = (sections as Record<string, unknown>)._attestation as
+    { disclosure_version?: string; disclosure_text?: string } | undefined;
   const name = `${app.first_name} ${app.last_name}`;
+  const registered = (history ?? []).some((h) => h.action === "account_registered");
+  const timeline = buildTimeline({
+    createdAt: app.created_at,
+    meetsGuidelines: (app.fail_reasons ?? []).length === 0,
+    submittedAt: full?.submitted_at,
+    audit: (history ?? []) as never,
+    messages: (messages ?? []) as never,
+    authors,
+  });
   const fmt = (d: string) =>
     new Date(d).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" });
 
@@ -141,11 +184,16 @@ export default async function ApplicationDetailPage({
         {canEdit && <StatusForm id={id} status={app.status as Status} />}
       </div>
 
-      {canEdit && app.status === "full_app_submitted" && <ReviewActions id={id} />}
-      {canEdit && !app.eligible && ["new", "contacted"].includes(app.status) && (
-        <PrescreenDecision
+      {canEdit && (
+        <DecisionPanel
           id={id}
+          status={app.status}
+          name={name}
+          firstName={app.first_name}
+          email={app.email}
+          meetsGuidelines={(app.fail_reasons ?? []).length === 0}
           reasons={(app.fail_reasons as FailReason[]).map((r) => FAIL_REASON_LABELS[r] ?? r)}
+          registered={registered}
         />
       )}
 
@@ -157,10 +205,20 @@ export default async function ApplicationDetailPage({
               {unreadReplies > 0 && <Badge tone="warn">{unreadReplies} new</Badge>}
             </h2>
             {canEdit && <MarkRepliesRead id={id} unread={unreadReplies} />}
+            {waitingSince && (
+              <div className="border-accent/40 bg-accent-soft mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border p-3">
+                <p className="text-sm">
+                  <strong>💬 Waiting for your reply</strong> for {waitingFor(waitingSince)}. Reply
+                  below, or mark it if it doesn&apos;t need an answer.
+                </p>
+                {canEdit && <NoReplyNeededButton id={id} />}
+              </div>
+            )}
             <MessageThread
               viewer="admin"
               messages={(messages ?? []).map((m) => ({
                 ...m,
+                attachments: attachments.get(m.id as string) ?? [],
                 author_label: m.author_id
                   ? (authors.get(m.author_id) ?? "Coordinator")
                   : "Coordinator",
@@ -268,13 +326,23 @@ export default async function ApplicationDetailPage({
 
           <Card>
             <h2 className="mb-4 font-sans text-lg font-semibold">
-              {SECTION_TITLES.photos} ({photos?.length ?? 0})
+              {SECTION_TITLES.photos} ({photos?.filter((p) => isPhotoKind(p.kind)).length ?? 0}{" "}
+              photos)
             </h2>
             {photos?.length ? (
               <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {photos.map((p) => (
                   <li key={p.id}>
-                    {p.kind === "video" && signed.get(p.storage_path) ? (
+                    {p.kind === "audio" && signed.get(p.storage_path) ? (
+                      <div className="bg-muted-bg flex aspect-square items-center rounded-lg p-2">
+                        <audio
+                          src={signed.get(p.storage_path)}
+                          controls
+                          preload="metadata"
+                          className="w-full"
+                        />
+                      </div>
+                    ) : p.kind === "video" && signed.get(p.storage_path) ? (
                       <video
                         src={signed.get(p.storage_path)}
                         controls
@@ -295,7 +363,9 @@ export default async function ApplicationDetailPage({
                     ) : (
                       <div className="bg-muted-bg aspect-square rounded-lg" />
                     )}
-                    <p className="text-muted mt-1 text-xs capitalize">{p.kind}</p>
+                    <p className="text-muted mt-1 text-xs capitalize">
+                      {p.kind === "audio" ? "voice recording" : p.kind}
+                    </p>
                   </li>
                 ))}
               </ul>
@@ -303,8 +373,50 @@ export default async function ApplicationDetailPage({
               <p className="text-muted text-sm">No photos uploaded.</p>
             )}
             <p className="text-muted mt-3 text-xs">
-              Photo links expire after 10 minutes. Reload the page for new links.
+              Links expire after 10 minutes. Reload the page for new links.
             </p>
+          </Card>
+
+          <Card>
+            <h2 className="mb-4 font-sans text-lg font-semibold">
+              Documents ({documents?.length ?? 0})
+            </h2>
+            {documents?.length ? (
+              <ul className="divide-border divide-y">
+                {documents.map((d) => (
+                  <li key={d.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
+                    <FileText className="text-primary size-4 shrink-0" aria-hidden />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-medium">
+                        {docTypeLabel(d.doc_type as string)}
+                      </span>
+                      <span className="text-muted block truncate text-xs">
+                        {d.file_name as string} ·{" "}
+                        {new Date(d.created_at as string).toLocaleDateString("en-US", {
+                          dateStyle: "medium",
+                        })}
+                      </span>
+                    </span>
+                    <a
+                      href={`/api/portal/document/${d.id}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-primary text-sm font-semibold underline"
+                    >
+                      Open
+                    </a>
+                    <a
+                      href={`/api/portal/document/${d.id}?download=1`}
+                      className="text-primary text-sm underline"
+                    >
+                      Download
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-muted text-sm">No documents uploaded (they&apos;re optional).</p>
+            )}
           </Card>
 
           {full?.signed_name && (
@@ -315,8 +427,24 @@ export default async function ApplicationDetailPage({
                   ["Signed name", full.signed_name],
                   ["Signed at", full.signed_at ? fmt(full.signed_at) : null],
                   ["Submitted at", full.submitted_at ? fmt(full.submitted_at) : null],
+                  [
+                    "Health disclosure statement",
+                    attestation?.disclosure_version
+                      ? `Accepted (version ${attestation.disclosure_version})`
+                      : "Not recorded (submitted before this statement was added)",
+                  ],
                 ]}
               />
+              {attestation?.disclosure_text && (
+                <details className="mt-3 text-sm">
+                  <summary className="text-primary cursor-pointer">
+                    Show the statement they accepted
+                  </summary>
+                  <p className="text-muted mt-2 whitespace-pre-wrap">
+                    {attestation.disclosure_text}
+                  </p>
+                </details>
+              )}
             </Card>
           )}
         </div>
@@ -338,21 +466,29 @@ export default async function ApplicationDetailPage({
             </ol>
           </Card>
           <Card>
-            <h2 className="mb-4 font-sans text-lg font-semibold">Status history</h2>
-            <ol className="space-y-2 text-sm">
-              {history?.map((h, i) => {
-                const m = h.meta as { from?: string; to?: string };
-                return (
-                  <li key={i}>
-                    <span className="text-muted">{fmt(h.created_at)}</span> · {m.from} →{" "}
-                    <strong>{m.to}</strong>
-                    <span className="text-muted block text-xs">
-                      {authors.get(h.actor_id) ?? ""}
-                    </span>
-                  </li>
-                );
-              })}
-              {!history?.length && <li className="text-muted">No changes yet.</li>}
+            <h2 className="mb-4 font-sans text-lg font-semibold">Timeline</h2>
+            <ol className="border-primary-soft space-y-4 border-l-2 pl-4 text-sm">
+              {timeline.map((e, i) => (
+                <li key={i} className="relative">
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "absolute top-1.5 -left-[1.4rem] size-2.5 rounded-full",
+                      e.tone === "good"
+                        ? "bg-primary"
+                        : e.tone === "bad"
+                          ? "bg-destructive"
+                          : "bg-muted",
+                    )}
+                  />
+                  <p className="font-medium">{e.title}</p>
+                  <p className="text-muted text-xs">
+                    {fmt(e.at)}
+                    {e.by ? ` · ${e.by}` : ""}
+                    {e.detail ? ` · ${e.detail}` : ""}
+                  </p>
+                </li>
+              ))}
             </ol>
           </Card>
           {can(role, "delete_applicant") && (

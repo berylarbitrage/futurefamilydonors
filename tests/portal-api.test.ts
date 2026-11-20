@@ -16,11 +16,33 @@ vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => db,
   PHOTO_BUCKET: "donor-photos",
 }));
-vi.mock("@/lib/email", () => ({ sendEmail: async () => true }));
+const afterTasks: (() => Promise<void>)[] = [];
+vi.mock("next/server", async (orig) => ({
+  ...(await orig<typeof import("next/server")>()),
+  after: (fn: () => Promise<void>) => afterTasks.push(fn),
+}));
+type Details = { title: string; rows: [string, string][] }[];
+const emails: { to: string; subject: string; details?: Details; audioUrl?: string }[] = [];
+vi.mock("@/lib/email", () => ({
+  sendEmail: async (o: {
+    to: string;
+    subject: string;
+    react: { props: { details?: Details; audioUrl?: string } };
+  }) => {
+    emails.push({
+      to: o.to,
+      subject: o.subject,
+      details: o.react.props.details,
+      audioUrl: o.react.props.audioUrl,
+    });
+    return true;
+  },
+}));
 
 process.env.NEXT_PUBLIC_SUPABASE_URL = "http://localhost:54321";
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon";
 process.env.SUPABASE_SERVICE_ROLE_KEY = "service";
+process.env.ADMIN_NOTIFY_EMAIL = "team@x.com";
 
 const { PATCH: saveSection } = await import("@/app/api/portal/section/route");
 const { POST: submit } = await import("@/app/api/portal/submit/route");
@@ -140,7 +162,11 @@ describe("portal submit", () => {
     db.tables.full_applications = [
       { application_id: "app-a", sections: {}, completed_sections: ["background"] },
     ];
-    const res = await call(submit, "POST", { signedName: "Jane Doe", attest: true });
+    const res = await call(submit, "POST", {
+      signedName: "Jane Doe",
+      attest: true,
+      disclose: true,
+    });
     expect(res.status).toBe(400);
   });
 
@@ -158,7 +184,11 @@ describe("portal submit", () => {
       { application_id: "app-a", kind: "recent" },
       { application_id: "app-a", kind: "recent" },
     ];
-    const res = await call(submit, "POST", { signedName: "Jane Doe", attest: true });
+    const res = await call(submit, "POST", {
+      signedName: "Jane Doe",
+      attest: true,
+      disclose: true,
+    });
     expect(res.status).toBe(200);
     expect(db.tables.full_applications![0]).toMatchObject({ signed_name: "Jane Doe" });
     expect(db.tables.full_applications![0]!.submitted_at).toBeTruthy();
@@ -168,9 +198,70 @@ describe("portal submit", () => {
     expect(db.tables.applications!.find((a) => a.id === "app-b")!.status).toBe("full_app_pending");
   });
 
+  it("emails the team every answer, plus photos and the voice recording", async () => {
+    emails.length = 0;
+    afterTasks.length = 0;
+    Object.assign(db.tables.applications![0]!, {
+      email: "a@x.com",
+      phone: "+13125550100",
+      date_of_birth: "1998-05-01",
+      country: "United States",
+      state: "IL",
+      prescreen_details: { schools: [{ name: "UIUC", level: "Bachelor's" }] },
+      fail_reasons: [],
+    });
+    db.tables.full_applications = [
+      {
+        application_id: "app-a",
+        sections: { background: background },
+        completed_sections: ["background", "appearance", "medical", "family", "reproductive"],
+        submitted_at: null,
+      },
+    ];
+    db.tables.photos = [
+      { application_id: "app-a", kind: "childhood", storage_path: "app-a/1.jpg" },
+      { application_id: "app-a", kind: "recent", storage_path: "app-a/2.jpg" },
+      { application_id: "app-a", kind: "recent", storage_path: "app-a/3.jpg" },
+      { application_id: "app-a", kind: "audio", storage_path: "app-a/4.m4a" },
+    ];
+    await call(submit, "POST", { signedName: "Jane Doe", attest: true, disclose: true });
+    for (const t of afterTasks) await t();
+    expect(emails).toHaveLength(1);
+    const e = emails[0]!;
+    expect(e.to).toBe("team@x.com");
+    expect(e.subject).toMatch(/full application/);
+    const flat = e.details!.flatMap((s) => s.rows.map(([k, v]) => `${s.title}|${k}|${v}`));
+    expect(flat.some((r) => r.includes("|Hiking"))).toBe(true);
+    expect(flat.some((r) => r.startsWith("Signature|Signed name|Jane Doe"))).toBe(true);
+    expect(e.audioUrl).toContain("app-a/4.m4a");
+  });
+
   it("requires the attestation checkbox", async () => {
     expect((await call(submit, "POST", { signedName: "Jane Doe", attest: false })).status).toBe(
       400,
     );
+  });
+
+  it("requires the health disclosure and records which version was accepted", async () => {
+    db.tables.full_applications = [
+      {
+        application_id: "app-a",
+        sections: { background: { occupation: "Nurse" } },
+        completed_sections: ["background", "appearance", "medical", "family", "reproductive"],
+        submitted_at: null,
+      },
+    ];
+    db.tables.photos = [
+      { application_id: "app-a", kind: "recent" },
+      { application_id: "app-a", kind: "recent" },
+      { application_id: "app-a", kind: "recent" },
+    ];
+    const no = await call(submit, "POST", { signedName: "Jane Doe", attest: true });
+    expect(no.status).toBe(400);
+    const ok = await call(submit, "POST", { signedName: "Jane Doe", attest: true, disclose: true });
+    expect(ok.status).toBe(200);
+    const sections = db.tables.full_applications![0]!.sections as Record<string, unknown>;
+    expect(sections.background).toEqual({ occupation: "Nurse" });
+    expect(sections._attestation).toMatchObject({ disclosure_version: expect.any(String) });
   });
 });

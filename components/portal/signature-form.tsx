@@ -1,5 +1,6 @@
 "use client";
 
+import { DISCLOSURE_TEXT } from "@/lib/legal/disclosure";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -94,6 +95,27 @@ export function SignatureForm({
       {errors.attest && (
         <p role="alert" className="text-destructive text-sm">
           {errors.attest.message}
+        </p>
+      )}
+      <div className="border-border bg-muted-bg rounded-3xl border-2 p-4 text-sm">
+        <p className="mb-1 font-semibold">Health disclosure</p>
+        {DISCLOSURE_TEXT}
+      </div>
+      <label className="flex items-start gap-3 text-sm">
+        <input
+          type="checkbox"
+          className="mt-1 size-4 accent-[var(--primary)]"
+          aria-invalid={!!errors.disclose}
+          {...register("disclose")}
+        />
+        <span>
+          I confirm the health disclosure above is true.
+          <span className="text-destructive"> *</span>
+        </span>
+      </label>
+      {errors.disclose && (
+        <p role="alert" className="text-destructive text-sm">
+          {errors.disclose.message}
         </p>
       )}
       <Field

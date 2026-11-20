@@ -14,6 +14,8 @@ export default async function ResultPage({
 }: {
   searchParams: Promise<{ status?: string }>;
 }) {
+  // Every application is reviewed by staff first, so applicants always see the
+  // "received" message. ("eligible" is kept for old links.)
   const { status } = await searchParams;
   const eligible = status === "eligible";
 
@@ -65,8 +67,9 @@ export default async function ResultPage({
               Thank you — we&apos;ve received your application
             </h1>
             <p className="mt-4 text-lg">
-              Our team will review your answers personally and get back to you by email. We&apos;ve
-              also sent you a confirmation — keep an eye on your inbox (and spam folder).
+              Our team will review your answers personally and email you about the next step —
+              usually within a few business days. We&apos;ve also sent you a confirmation — keep an
+              eye on your inbox (and spam folder).
             </p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
               <Button asChild size="lg" variant="primary">

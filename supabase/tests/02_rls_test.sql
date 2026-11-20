@@ -22,12 +22,31 @@ values ('10000000-0000-0000-0000-00000000000a','00000000-0000-0000-0000-00000000
 insert into full_applications (application_id, sections) values ('10000000-0000-0000-0000-00000000000b','{"medical":{"x":1}}');
 insert into photos (application_id, storage_path) values ('10000000-0000-0000-0000-00000000000b','10000000-0000-0000-0000-00000000000b/p.jpg');
 insert into storage.objects (bucket_id,name) values ('donor-photos','10000000-0000-0000-0000-00000000000b/p.jpg');
+insert into documents (application_id, doc_type, file_name, storage_path, content_type, size_bytes)
+values ('10000000-0000-0000-0000-00000000000b','genetic','b.pdf','10000000-0000-0000-0000-00000000000b/docs/b.pdf','application/pdf',10);
+insert into message_attachments (application_id, file_name, storage_path, content_type, size_bytes)
+values ('10000000-0000-0000-0000-00000000000b','b.png','10000000-0000-0000-0000-00000000000b/attachments/b.png','image/png',10);
 
 -- ---- Applicant A cannot see or modify applicant B's data ----
 set role authenticated; set request.jwt.claim.sub = '00000000-0000-0000-0000-00000000000a';
 select pg_temp.expect('A sees only own application', (select count(*) from applications), 1);
 select pg_temp.expect('A cannot read B full app', (select count(*) from full_applications), 0);
 select pg_temp.expect('A cannot read B photos', (select count(*) from photos), 0);
+select pg_temp.expect('A cannot read B documents', (select count(*) from documents), 0);
+select pg_temp.expect('A cannot read B attachments', (select count(*) from message_attachments), 0);
+do $$ begin
+  insert into message_attachments (application_id, file_name, storage_path, content_type, size_bytes)
+  values ('10000000-0000-0000-0000-00000000000a','x.pdf','10000000-0000-0000-0000-00000000000a/attachments/x.pdf','application/pdf',1);
+  raise exception 'FAIL: applicants could write attachments directly';
+exception when insufficient_privilege then null;
+end $$;
+do $$ begin
+  insert into documents (application_id, doc_type, file_name, storage_path, content_type, size_bytes)
+  values ('10000000-0000-0000-0000-00000000000b','other','x.pdf','10000000-0000-0000-0000-00000000000b/docs/x.pdf','application/pdf',1);
+  raise exception 'FAIL: A could add a document to B';
+exception when insufficient_privilege then null;
+end $$;
+delete from documents;
 select pg_temp.expect('A cannot read B storage objects', (select count(*) from storage.objects), 0);
 update applications set status='completed', eligible=true;
 update profiles set role='admin';
@@ -47,6 +66,7 @@ select pg_temp.expect('A can write own full app', (select count(*) from full_app
 update full_applications set submitted_at = now();
 update full_applications set sections = '{"x":1}';
 reset role;
+select pg_temp.expect('A could not delete B documents', (select count(*) from documents), 1);
 select pg_temp.expect('A status unchanged',
   (select count(*) from applications where status='new'), 2);
 select pg_temp.expect('A role unchanged',
@@ -58,6 +78,14 @@ select pg_temp.expect('A cannot edit after submit',
 set role anon; reset request.jwt.claim.sub;
 select pg_temp.expect('anon reads no applications', (select count(*) from applications), 0);
 select pg_temp.expect('anon reads no referrers', (select count(*) from referrers), 0);
+select pg_temp.expect('anon reads no documents', (select count(*) from documents), 0);
+select pg_temp.expect('anon reads no attachments', (select count(*) from message_attachments), 0);
+reset role;
+insert into email_codes (email, purpose, code_hash, expires_at) values ('a@x.com','apply','h', now() + interval '10 minutes');
+set role anon;
+select pg_temp.expect('anon cannot read email codes', (select count(*) from email_codes), 0);
+select pg_temp.expect('anon cannot read translations', (select count(*) from translations), 0);
+select pg_temp.expect('anon cannot read reminders', (select count(*) from reminders), 0);
 do $$ begin
   insert into applications (donor_type,first_name,last_name,email,phone,date_of_birth,state,zip,eligible)
   values ('egg','x','x','x','1','2000-01-01','IL','1',true);
@@ -196,5 +224,18 @@ reset role;
 select pg_temp.expect('owner can change roles',
   (select count(*) from profiles where id='00000000-0000-0000-0000-0000000000e0' and role='coordinator'), 1);
 update profiles set role='viewer' where id='00000000-0000-0000-0000-0000000000e0';
+
+-- ---- Registration links are server-only ----
+insert into account_setup_tokens (token_hash, user_id, purpose, expires_at)
+values (repeat('a', 64), '00000000-0000-0000-0000-00000000000a', 'applicant', now() + interval '14 days');
+set role authenticated; set request.jwt.claim.sub = '00000000-0000-0000-0000-00000000000a';
+select pg_temp.expect('applicant cannot read registration links', (select count(*) from account_setup_tokens), 0);
+reset role;
+set role authenticated; set request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000ad';
+select pg_temp.expect('even admins cannot read registration links', (select count(*) from account_setup_tokens), 0);
+reset role;
+set role anon; reset request.jwt.claim.sub;
+select pg_temp.expect('anon cannot read registration links', (select count(*) from account_setup_tokens), 0);
+reset role;
 
 \echo 'All RLS assertions passed'

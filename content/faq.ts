@@ -18,7 +18,7 @@ const PRESCREEN: FaqItem = {
 };
 const AFTER: FaqItem = {
   q: "I hit submit. Now what?",
-  a: "You get your first result on the spot. Pre-qualify? Keep going straight into the full application on our site. Every step saves automatically, and we email you a link so you can pick up later. Then a coordinator reaches out.",
+  a: "A real person on our team reviews it, usually within a few business days. If it's a fit, we email you a link to create your password and jump into the full application on our site. Every step saves automatically. Then a coordinator reaches out.",
 };
 const PRIVACY: FaqItem = {
   q: "Who sees my info?",

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { checkRateLimit, errorJson, json, parseBody } from "@/lib/api";
-import { PHOTO_LIMITS, VIDEO_LIMITS } from "@/lib/full-app";
+import { isPhotoKind, PHOTO_LIMITS, VIDEO_LIMITS } from "@/lib/full-app";
 import { createAdminClient, PHOTO_BUCKET } from "@/lib/supabase/admin";
 import { log } from "@/lib/log";
 import { getFullApp, withSection } from "@/lib/portal";
@@ -45,7 +45,7 @@ export async function POST(req: Request) {
     .select("kind")
     .eq("application_id", applicationId);
   const kinds = ((existing ?? []) as { kind: string }[]).map((p) => p.kind);
-  let total = kinds.filter((k) => k !== "video").length;
+  let total = kinds.filter(isPhotoKind).length;
   let videos = kinds.filter((k) => k === "video").length;
 
   const bucket = db.storage.from(PHOTO_BUCKET);

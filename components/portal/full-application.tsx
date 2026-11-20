@@ -15,20 +15,28 @@ import {
 import type { DonorType } from "@/config/eligibility";
 import { SectionForm } from "@/components/portal/section-form";
 import { PhotoUploader, type PortalPhoto } from "@/components/portal/photo-uploader";
+import { DocumentUploader, type PortalDocument } from "@/components/portal/document-uploader";
 import { SignatureForm } from "@/components/portal/signature-form";
 import { cn } from "@/lib/utils";
+
+/** Portal steps: the application sections plus an optional Documents step (not counted in progress). */
+type Step = SectionId | "documents";
+const STEPS: Step[] = [...FORM_SECTION_IDS, "photos", "documents", "signature"];
+const stepTitle = (s: Step) => (s === "documents" ? "Documents" : SECTION_TITLES[s]);
 
 export function FullApplication({
   donorType,
   initialSections,
   initialCompleted,
   photos,
+  documents,
   submitted,
 }: {
   donorType: DonorType;
   initialSections: Record<string, Record<string, unknown>>;
   initialCompleted: string[];
   photos: PortalPhoto[];
+  documents: PortalDocument[];
   submitted: boolean;
 }) {
   const router = useRouter();
@@ -38,10 +46,10 @@ export function FullApplication({
     submitted ? [...ALL_SECTION_IDS] : initialCompleted,
   );
   const firstOpen = ALL_SECTION_IDS.find((s) => !initialCompleted.includes(s)) ?? "background";
-  const [active, setActive] = useState<SectionId>(submitted ? "background" : firstOpen);
+  const [active, setActive] = useState<Step>(submitted ? "background" : firstOpen);
   const pct = completionPercent(completed);
 
-  const go = (s: SectionId) => {
+  const go = (s: Step) => {
     setActive(s);
     requestAnimationFrame(() => document.getElementById("section-heading")?.focus());
   };
@@ -71,8 +79,9 @@ export function FullApplication({
         </div>
         <nav aria-label="Application sections">
           <ol className="flex gap-2 overflow-x-auto pb-2 md:flex-col md:overflow-visible">
-            {ALL_SECTION_IDS.map((s, i) => {
-              const done = completed.includes(s);
+            {STEPS.map((s, i) => {
+              const optional = s === "documents";
+              const done = optional ? documents.length > 0 : completed.includes(s);
               return (
                 <li key={s} className="shrink-0">
                   <button
@@ -92,7 +101,8 @@ export function FullApplication({
                       <Circle className="size-4 shrink-0" aria-label="Incomplete" />
                     )}
                     <span className="whitespace-nowrap">
-                      {i + 1}. {SECTION_TITLES[s]}
+                      {i + 1}. {stepTitle(s)}
+                      {optional && <span className="text-muted font-normal"> (optional)</span>}
                     </span>
                   </button>
                 </li>
@@ -107,7 +117,7 @@ export function FullApplication({
         aria-labelledby="section-heading"
       >
         <h2 id="section-heading" tabIndex={-1} className="text-2xl font-extrabold outline-none">
-          {SECTION_TITLES[active]}
+          {stepTitle(active)}
         </h2>
         {def && <p className="mt-1 mb-6 text-sm font-medium">{def.description}</p>}
         {!def && <div className="mb-6" />}
@@ -123,8 +133,8 @@ export function FullApplication({
               setCompleted(c);
               setSections((prev) => ({ ...prev, [active]: data }));
               if (advance) {
-                const idx = ALL_SECTION_IDS.indexOf(active);
-                const nextId = ALL_SECTION_IDS[idx + 1];
+                const idx = STEPS.indexOf(active);
+                const nextId = STEPS[idx + 1];
                 if (nextId) go(nextId);
               }
             }}
@@ -140,6 +150,7 @@ export function FullApplication({
             }}
           />
         )}
+        {active === "documents" && <DocumentUploader donorType={donorType} documents={documents} />}
         {active === "signature" && (
           <SignatureForm
             submitted={submitted}

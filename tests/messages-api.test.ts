@@ -142,6 +142,18 @@ describe("admin -> donor messages", () => {
     await call(adminRoute.PATCH, "PATCH", { markRead: true });
     expect(db.tables.messages![0]!.read_at).toBeTruthy();
   });
+
+  it("can mark the applicant's messages as 'No reply needed'", async () => {
+    currentUser = { id: "admin-1" };
+    db.tables.messages = [
+      { id: "m1", application_id: APP_ID, direction: "inbound", body: "thanks!", read_at: null },
+    ];
+    db.tables.audit_log = [];
+    const res = await call(adminRoute.PATCH, "PATCH", { noReplyNeeded: true });
+    expect(res.status).toBe(200);
+    expect(db.tables.messages![0]!.no_reply_needed_at).toBeTruthy();
+    expect(db.tables.audit_log![0]).toMatchObject({ action: "no_reply_needed" });
+  });
 });
 
 describe("donor -> coordinator replies", () => {
@@ -149,7 +161,7 @@ describe("donor -> coordinator replies", () => {
     expect((await call(portalRoute.POST, "POST", { body: "hello" })).status).toBe(401);
   });
 
-  it("stores the reply and notifies the admin without the message text", async () => {
+  it("stores the reply and emails the team the message itself", async () => {
     currentUser = { id: "user-a" };
     const res = await call(portalRoute.POST, "POST", { body: "I have a question about my cycle" });
     expect(res.status).toBe(200);
@@ -158,6 +170,11 @@ describe("donor -> coordinator replies", () => {
       author_id: "user-a",
       application_id: APP_ID,
     });
-    expect(sent).toEqual([{ to: "admin@example.com", subject: "New message from Jane D." }]);
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).toMatchObject({
+      to: "admin@example.com",
+      subject: "New message from Jane D.",
+      body: "I have a question about my cycle",
+    });
   });
 });

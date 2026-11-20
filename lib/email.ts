@@ -21,6 +21,8 @@ export async function sendEmailResult(opts: {
   subject: string;
   react: ReactElement;
   replyTo?: string;
+  /** Files Resend fetches from these (signed) URLs and attaches. */
+  attachments?: { filename: string; path: string }[];
 }): Promise<SendResult> {
   const key = env("RESEND_API_KEY");
   if (!key) {
@@ -39,6 +41,7 @@ export async function sendEmailResult(opts: {
       html,
       text,
       replyTo: opts.replyTo,
+      ...(opts.attachments?.length ? { attachments: opts.attachments } : {}),
       // A unique id per email stops Gmail from stacking emails that share a
       // subject (e.g. several pre-screens from the same person) into one thread.
       headers: { "X-Entity-Ref-ID": crypto.randomUUID() },

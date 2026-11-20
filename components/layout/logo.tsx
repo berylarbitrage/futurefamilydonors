@@ -16,7 +16,10 @@ export function Logo({ className }: { className?: string }) {
       aria-label={`${SITE.brand} home`}
     >
       <LogoMark className="h-14 w-auto shrink-0 transition-transform motion-safe:group-hover:-rotate-6" />
-      <span className="font-display flex flex-col text-[1.05rem] leading-[1.05] tracking-tight whitespace-nowrap sm:text-[1.15rem]">
+      <span
+        className="notranslate font-display flex flex-col text-[1.05rem] leading-[1.05] tracking-tight whitespace-nowrap sm:text-[1.15rem]"
+        translate="no"
+      >
         <span className="font-black">{line1}</span>
         {line2 && <span className="font-extrabold">{line2}</span>}
       </span>

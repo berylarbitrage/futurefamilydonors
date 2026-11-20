@@ -15,6 +15,8 @@ export default function AdminNewApplicationEmail({
   details = [],
   photoUrls = [],
   videoUrl,
+  audioUrl,
+  documents = [],
 }: {
   name?: string;
   donorType?: "egg" | "sperm";
@@ -25,6 +27,9 @@ export default function AdminNewApplicationEmail({
   /** Signed links to the applicant's photos (shown as thumbnails). */
   photoUrls?: string[];
   videoUrl?: string;
+  audioUrl?: string;
+  /** Optional supporting documents (degree, medical/genetic reports, …). */
+  documents?: { label: string; fileName: string; url?: string }[];
 }) {
   const full = kind === "full application";
   return (
@@ -76,9 +81,11 @@ export default function AdminNewApplicationEmail({
           </table>
         </Section>
       ))}
-      {(photoUrls.length > 0 || videoUrl) && (
+      {(photoUrls.length > 0 || videoUrl || audioUrl) && (
         <Section style={{ marginBottom: 16 }}>
-          <Text style={{ fontSize: 15, fontWeight: 700, margin: "16px 0 6px" }}>Photos</Text>
+          <Text style={{ fontSize: 15, fontWeight: 700, margin: "16px 0 6px" }}>
+            Photos & media
+          </Text>
           <table cellPadding={0} cellSpacing={0}>
             <tbody>
               {Array.from({ length: Math.ceil(photoUrls.length / 3) }, (_, row) => (
@@ -105,10 +112,34 @@ export default function AdminNewApplicationEmail({
               <Link href={videoUrl}>▶ Watch their video</Link>
             </Text>
           )}
+          {audioUrl && (
+            <Text style={{ margin: "4px 0" }}>
+              <Link href={audioUrl}>🔊 Listen to their voice recording</Link>
+            </Text>
+          )}
           <Text style={{ fontSize: 12, color: "#6b6b6b", margin: "4px 0" }}>
-            Click a photo to see it full size. These links work for 30 days; the photos are always
-            in the admin.
+            Click a photo to see it full size. These links work for 30 days; everything is always in
+            the admin.
           </Text>
+        </Section>
+      )}
+      {full && (
+        <Section style={{ marginBottom: 16 }}>
+          <Text style={{ fontSize: 15, fontWeight: 700, margin: "16px 0 6px" }}>
+            Documents ({documents.length})
+          </Text>
+          {documents.length ? (
+            documents.map((d, i) => (
+              <Text key={i} style={{ margin: "2px 0", fontSize: 14 }}>
+                <strong>{d.label}:</strong>{" "}
+                {d.url ? <Link href={d.url}>{d.fileName}</Link> : d.fileName}
+              </Text>
+            ))
+          ) : (
+            <Text style={{ margin: "2px 0", fontSize: 14, color: "#6b6b6b" }}>
+              None uploaded (optional).
+            </Text>
+          )}
         </Section>
       )}
       <Button href={adminUrl} style={button}>

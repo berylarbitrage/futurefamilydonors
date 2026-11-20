@@ -18,5 +18,7 @@ export const contactSchema = z.object({
     .min(10, "Please write at least a few words")
     .max(3000, "Please keep your message under 3000 characters"),
   website: z.string().max(0).optional(), // honeypot
+  /** Token from the email verification code step. */
+  emailProof: z.string().max(200).optional(),
 });
 export type ContactInput = z.infer<typeof contactSchema>;

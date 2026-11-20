@@ -9,6 +9,7 @@ import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Honeypot } from "@/components/forms/honeypot";
+import { EmailVerification } from "@/components/forms/email-verification";
 
 function CopyRow({ label, url }: { label: string; url: string }) {
   const [copied, setCopied] = useState(false);
@@ -39,18 +40,23 @@ function CopyRow({ label, url }: { label: string; url: string }) {
 export function ReferForm() {
   const [links, setLinks] = useState<{ link: string } | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [emailProof, setEmailProof] = useState<string | null>(null);
+  const [needsCode, setNeedsCode] = useState(false);
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<ReferInput>({ resolver: zodResolver(referSchema) });
+  const email = watch("email") ?? "";
 
   const onSubmit = async (data: ReferInput) => {
     setServerError(null);
+    if (!emailProof) return setNeedsCode(true);
     const res = await fetch("/api/refer", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...data, emailProof }),
     });
     const j = (await res.json().catch(() => ({}))) as {
       links?: { link: string };
@@ -101,6 +107,16 @@ export function ReferForm() {
           {...register("email")}
         />
       </Field>
+      <EmailVerification
+        email={email}
+        purpose="refer"
+        proof={emailProof}
+        onProof={(p) => {
+          setEmailProof(p);
+          if (p) setNeedsCode(false);
+        }}
+        error={needsCode ? "Please verify your email to get your link." : undefined}
+      />
       {serverError && (
         <p role="alert" className="text-destructive text-sm">
           {serverError}

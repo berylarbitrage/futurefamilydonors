@@ -88,6 +88,10 @@ describe("admin filters", () => {
         calls.push(`eq:${c}=${v}`);
         return q;
       },
+      in(c: string, v: readonly unknown[]) {
+        calls.push(`in:${c}=${v.join("|")}`);
+        return q;
+      },
       or(f: string) {
         calls.push(`or:${f}`);
         return q;
@@ -99,5 +103,44 @@ describe("admin filters", () => {
       "eq:eligible=false",
       "or:first_name.ilike.%jane%,last_name.ilike.%jane%,email.ilike.%jane%",
     ]);
+  });
+
+  it("filters by pipeline stage (a group of statuses)", () => {
+    const calls: string[] = [];
+    const q = {
+      eq(c: string, v: unknown) {
+        calls.push(`eq:${c}=${v}`);
+        return q;
+      },
+      in(c: string, v: readonly unknown[]) {
+        calls.push(`in:${c}=${v.join("|")}`);
+        return q;
+      },
+      or(_f: string) {
+        return q;
+      },
+    };
+    applyFilters(q, { stage: "decide" });
+    expect(calls).toEqual(["in:status=new|contacted"]);
+    expect(parseFilters({ stage: "bogus" }).stage).toBeUndefined();
+  });
+
+  it("filters by referral code (applicants from one referrer's link)", () => {
+    const calls: string[] = [];
+    const q = {
+      eq(c: string, v: unknown) {
+        calls.push(`eq:${c}=${v}`);
+        return q;
+      },
+      in(_c: string, _v: readonly unknown[]) {
+        return q;
+      },
+      or(_f: string) {
+        return q;
+      },
+    };
+    applyFilters(q, parseFilters({ ref: "ABCD1234" }));
+    expect(calls).toEqual(["eq:referral_code=ABCD1234"]);
+    expect(parseFilters({ ref: "bad,code" }).ref).toBeUndefined();
   });
 });

@@ -17,13 +17,12 @@ import { createAdminClient, PHOTO_BUCKET } from "@/lib/supabase/admin";
 import { mediaExt } from "@/lib/full-app";
 import { isSupabaseConfigured, env } from "@/lib/env";
 import { REF_CODE_RE, REF_COOKIE } from "@/lib/referral";
-import { createMagicLink, ensureUserDetailed, signInNewApplicant } from "@/lib/auth-links";
 import { sendEmail } from "@/lib/email";
 import { log } from "@/lib/log";
-import { SITE, siteUrl } from "@/config/site";
-import EligibleEmail from "@/emails/eligible";
+import { SITE } from "@/config/site";
 import IneligibleEmail from "@/emails/ineligible";
 import { notifyAdminNewPrescreen } from "@/lib/admin/notify";
+import { emailVerifiedFor } from "@/lib/email-verification";
 
 const DUPLICATE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
@@ -55,7 +54,7 @@ export async function POST(req: Request) {
 
   const body = await parseBody(req, applyRequestSchema);
   if (!body.ok) return body.res;
-  const { donorType, data: raw, turnstileToken, website, photos, video } = body.data;
+  const { donorType, data: raw, turnstileToken, website, photos, video, emailProof } = body.data;
 
   // Honeypot: pretend success, store nothing.
   if (website) return json({ ok: true, eligible: false });
@@ -88,6 +87,10 @@ export async function POST(req: Request) {
   }
   const db = createAdminClient();
   const email = d.email.toLowerCase();
+  if (!(await emailVerifiedFor(emailProof, email, "apply")))
+    return errorJson("Please verify your email with the code we send you.", 400, {
+      code: "email_unverified",
+    });
 
   // One submission per email per 24 hours.
   const since = new Date(Date.now() - DUPLICATE_WINDOW_MS).toISOString();
@@ -184,56 +187,19 @@ export async function POST(req: Request) {
   const applicationId = inserted.id as string;
   log.info("apply: stored", { applicationId, donorType, eligible: result.eligible });
 
-  // Eligible applicants continue straight into the full application on the
-  // site: create their account now and, if it is brand new, sign them in.
-  // An email with a "continue" link is sent as a backup either way.
-  let continueUrl: string | null = null;
-  let accountReady = false;
-  if (result.eligible) {
-    try {
-      const { id: userId, created } = await ensureUserDetailed(email);
-      await db
-        .from("applications")
-        .update({ user_id: userId, status: "full_app_pending" })
-        .eq("id", applicationId);
-      await db.from("full_applications").upsert({ application_id: applicationId });
-      accountReady = true;
-      if (created && (await signInNewApplicant(email))) {
-        continueUrl = "/portal/application?welcome=1";
-      }
-    } catch (err) {
-      log.error("apply: account creation / sign-in failed — see /setup-check", err, {
-        applicationId,
-      });
-    }
-  }
+  // Every application is reviewed by staff first: nobody is invited or turned
+  // down automatically. Staff use "Move to next step" (sends a "create your
+  // password" link) or "Decline" (sends an editable letter) in the admin.
+  // `eligible` is kept only as a hint for staff ("meets the guidelines").
 
   // Emails run after the response is sent. Each step is independent: a
   // failure in one must not stop the others (especially the admin notification).
   after(async () => {
-    if (result.eligible) {
-      let portalUrl = siteUrl("/portal/login?next=/portal/application");
-      if (accountReady) {
-        try {
-          portalUrl = await createMagicLink(email, "/portal/application");
-        } catch (err) {
-          log.error("apply: magic-link creation failed — see /setup-check", err, {
-            applicationId,
-          });
-        }
-      }
-      await sendEmail({
-        to: email,
-        subject: `Continue your ${donorType} donor application`,
-        react: createElement(EligibleEmail, { firstName: d.firstName, donorType, portalUrl }),
-      });
-    } else {
-      await sendEmail({
-        to: email,
-        subject: `We've received your application — ${SITE.brand}`,
-        react: createElement(IneligibleEmail, { firstName: d.firstName }),
-      });
-    }
+    await sendEmail({
+      to: email,
+      subject: `We've received your application — ${SITE.brand}`,
+      react: createElement(IneligibleEmail, { firstName: d.firstName }),
+    });
   });
 
   // One-time signed upload URLs for the pre-screen photos. The browser uploads
@@ -266,11 +232,9 @@ export async function POST(req: Request) {
   // Clear the referral cookie once it has been attributed.
   const res = json({
     ok: true,
-    eligible: result.eligible,
     applicationId,
     uploads,
     ...(videoUpload ? { videoUpload } : {}),
-    ...(continueUrl ? { continueUrl } : {}),
   });
   if (referralCode) res.cookies.delete(REF_COOKIE);
   return res;

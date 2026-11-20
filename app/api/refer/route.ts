@@ -5,16 +5,22 @@ import { generateRefCode, referralLinks } from "@/lib/referral";
 import { isSupabaseConfigured } from "@/lib/env";
 import { log } from "@/lib/log";
 import { siteUrl } from "@/config/site";
+import { emailVerifiedFor } from "@/lib/email-verification";
 
 export async function POST(req: Request) {
   const limited = checkRateLimit(req, "refer");
   if (limited) return limited;
   const body = await parseBody(req, referSchema);
   if (!body.ok) return body.res;
-  const { name, email, website } = body.data;
+  const { name, email, website, emailProof } = body.data;
   if (website)
     return json({ code: generateRefCode(), links: referralLinks("XXXXXXXX", siteUrl()) });
   if (!isSupabaseConfigured()) return errorJson("Referrals are temporarily unavailable.", 503);
+  // Only the owner of the email can create (or see) its referral link.
+  if (!(await emailVerifiedFor(emailProof, email, "refer")))
+    return errorJson("Please verify your email with the code we send you.", 400, {
+      code: "email_unverified",
+    });
 
   const db = createAdminClient();
 

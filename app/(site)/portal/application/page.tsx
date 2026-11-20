@@ -3,14 +3,12 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { requireUser } from "@/lib/auth";
-import { getFullApp, getOwnApplication } from "@/lib/portal";
+import { getFullApp, getOwnApplication, photosComplete, withSection } from "@/lib/portal";
 import { FullApplication } from "@/components/portal/full-application";
 import type { PortalPhoto } from "@/components/portal/photo-uploader";
-import { PHOTO_BUCKET } from "@/lib/supabase/admin";
+import type { PortalDocument } from "@/components/portal/document-uploader";
 
 export const metadata: Metadata = { title: "Full Application" };
-
-const SIGNED_URL_TTL = 600; // 10 minutes
 
 export default async function FullApplicationPage({
   searchParams,
@@ -25,24 +23,44 @@ export default async function FullApplicationPage({
 
   const { data: photoRows } = await supabase
     .from("photos")
-    .select("id,kind,storage_path")
+    .select("id,kind")
     .eq("application_id", app.id)
-    .neq("kind", "video") // the pre-screen video is shown to staff only, not in the photo grid
     .order("created_at");
-  const urls = new Map<string, string>();
-  if (photoRows?.length) {
-    // User-scoped client: storage RLS only signs the applicant's own files.
-    const { data } = await supabase.storage.from(PHOTO_BUCKET).createSignedUrls(
-      photoRows.map((p) => p.storage_path),
-      SIGNED_URL_TTL,
-    );
-    data?.forEach((d) => d.path && d.signedUrl && urls.set(d.path, d.signedUrl));
-  }
+  // Each image loads through /api/portal/photo/[id], which signs a fresh link
+  // every time, so photos keep working however long the page stays open.
   const photos: PortalPhoto[] = (photoRows ?? []).map((p) => ({
     id: p.id,
     kind: p.kind,
-    url: urls.get(p.storage_path) ?? null,
+    url: `/api/portal/photo/${p.id}`,
   }));
+
+  // Optional supporting documents (table added by 20261122000000_documents.sql;
+  // if it isn't there yet the step simply shows no documents).
+  const { data: docRows } = await supabase
+    .from("documents")
+    .select("id,doc_type,file_name,size_bytes,created_at")
+    .eq("application_id", app.id)
+    .order("created_at");
+  const documents: PortalDocument[] = (docRows ?? []).map((d) => ({
+    id: d.id as string,
+    docType: d.doc_type as string,
+    fileName: d.file_name as string,
+    sizeBytes: d.size_bytes as number,
+    createdAt: d.created_at as string,
+  }));
+
+  // Photos added in the pre-screen count: with 3+ the Photos step is already
+  // done (no need to upload again). Keep the stored flag in step with them.
+  let completedSections = full?.completed_sections ?? [];
+  if (!full?.submitted_at) {
+    const done = photosComplete(photos.map((p) => p.kind));
+    if (done !== completedSections.includes("photos")) {
+      completedSections = withSection(completedSections, "photos", done);
+      await supabase
+        .from("full_applications")
+        .upsert({ application_id: app.id, completed_sections: completedSections });
+    }
+  }
 
   return (
     <div>
@@ -58,16 +76,17 @@ export default async function FullApplicationPage({
           role="status"
           className="bg-mint border-ink mb-6 rounded-[14px] border-3 p-4 text-sm shadow-[4px_4px_0_0_#111]"
         >
-          <strong>Great news — you pre-qualify!</strong> Keep going with the sections below. Your
-          answers save automatically as you type, so you can stop any time. We&apos;ve also emailed
-          you a link to come back and continue later.
+          <strong>Welcome — you&apos;re invited to the full application!</strong> Work through the
+          sections below. Your answers save automatically as you type, so you can stop any time and
+          sign in later to continue.
         </div>
       )}
       <FullApplication
         donorType={app.donor_type}
         initialSections={full?.sections ?? {}}
-        initialCompleted={full?.completed_sections ?? []}
+        initialCompleted={completedSections}
         photos={photos}
+        documents={documents}
         submitted={!!full?.submitted_at}
       />
     </div>
