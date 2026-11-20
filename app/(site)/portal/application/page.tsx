@@ -62,6 +62,28 @@ export default async function FullApplicationPage({
     }
   }
 
+  // The pre-screen already asked for a school: start the full application's
+  // "College or university" answer from it so applicants don't type it twice.
+  const initialSections: Record<string, Record<string, unknown>> = { ...(full?.sections ?? {}) };
+  if (!full?.submitted_at && !initialSections.education?.school) {
+    const { data: pre } = await supabase
+      .from("applications")
+      .select("prescreen_details")
+      .eq("id", app.id)
+      .maybeSingle();
+    const schools = (pre?.prescreen_details as { schools?: { name?: string }[] } | null)?.schools;
+    const names = (schools ?? []).map((s) => s.name?.trim()).filter((n): n is string => !!n);
+    if (names.length) {
+      const [school, school2, school3] = names;
+      initialSections.education = {
+        ...initialSections.education,
+        school,
+        ...(school2 ? { school2 } : {}),
+        ...(school3 ? { school3 } : {}),
+      };
+    }
+  }
+
   return (
     <div>
       <Link
@@ -83,7 +105,7 @@ export default async function FullApplicationPage({
       )}
       <FullApplication
         donorType={app.donor_type}
-        initialSections={full?.sections ?? {}}
+        initialSections={initialSections}
         initialCompleted={completedSections}
         photos={photos}
         documents={documents}

@@ -38,6 +38,8 @@ export interface FieldDef {
   /** "grid" questions: one row per person, one column per detail. */
   rows?: readonly GridRow[];
   columns?: readonly GridColumn[];
+  /** "school": a type-ahead over the world universities list (free text still allowed). */
+  widget?: "school";
   /** Could identify the donor (school, birthplace): never shown in the anonymous catalog. */
   identifying?: boolean;
   /**
@@ -51,7 +53,8 @@ export type ShowIf =
   | { field: string; equals: string } // e.g. a Yes/No answer is "Yes"
   | { field: string; anyExcept: string } // multi-select has an option other than "None of these"
   | { field: string; gt: number } // number answer is greater than N
-  | { fields: readonly string[]; anyExcept: string }; // any of these multi-selects has a real answer
+  | { fields: readonly string[]; anyExcept: string } // any of these multi-selects has a real answer
+  | { field: string; filled: true }; // the other answer is not empty
 
 export interface FormSectionDef {
   id: FormSectionId;
@@ -150,16 +153,155 @@ const EDUCATION_LEVELS = [
   "Unknown",
 ] as const;
 
+const HEIGHTS = [
+  ...Array.from({ length: 37 }, (_, i) => {
+    const total = 48 + i; // 4'0" to 7'0"
+    return `${Math.floor(total / 12)}'${total % 12}"`;
+  }),
+  "Unknown",
+];
+const AGES = ["Unknown", ...Array.from({ length: 110 }, (_, i) => String(i + 1))];
+const ETHNICITIES = [
+  "English / British",
+  "Irish",
+  "Scottish / Welsh",
+  "German",
+  "Italian",
+  "French",
+  "Dutch / Belgian",
+  "Polish",
+  "Scandinavian",
+  "Russian / Ukrainian",
+  "Other Eastern European",
+  "Greek",
+  "Spanish / Portuguese",
+  "Other European",
+  "Jewish (Ashkenazi)",
+  "Jewish (Sephardic / Mizrahi)",
+  "Mexican",
+  "Puerto Rican",
+  "Cuban",
+  "Dominican",
+  "Central American",
+  "South American",
+  "African American",
+  "West African",
+  "East African",
+  "Other African",
+  "Caribbean",
+  "Middle Eastern",
+  "North African",
+  "Chinese",
+  "Taiwanese",
+  "Japanese",
+  "Korean",
+  "Vietnamese",
+  "Filipino",
+  "Thai",
+  "Other Southeast Asian",
+  "Indian",
+  "Pakistani / Bangladeshi",
+  "Other South Asian",
+  "Native American / Alaska Native",
+  "Native Hawaiian / Pacific Islander",
+  "Other",
+] as const;
+const OCCUPATIONS = [
+  "Healthcare / medical",
+  "Nursing",
+  "Education / teaching",
+  "Business / management",
+  "Finance / accounting",
+  "Engineering",
+  "IT / software",
+  "Science / research",
+  "Law",
+  "Government / public service",
+  "Military",
+  "Police / fire / security",
+  "Arts / design / media",
+  "Sales / retail",
+  "Hospitality / food service",
+  "Construction / skilled trades",
+  "Manufacturing",
+  "Transportation / logistics",
+  "Agriculture / farming",
+  "Beauty / wellness / fitness",
+  "Social work / counseling",
+  "Religious / ministry",
+  "Business owner / self-employed",
+  "Homemaker",
+  "Student",
+  "Retired",
+  "Not working",
+  "Other",
+  "Unknown",
+] as const;
+const MAJORS = [
+  "None (did not attend college)",
+  "Undecided",
+  "Biology / life sciences",
+  "Chemistry / biochemistry",
+  "Physics / astronomy",
+  "Mathematics / statistics",
+  "Computer science",
+  "Engineering",
+  "Nursing",
+  "Medicine / pre-med",
+  "Pharmacy",
+  "Public health",
+  "Kinesiology / exercise science",
+  "Nutrition / dietetics",
+  "Psychology",
+  "Sociology / social work",
+  "Political science / international relations",
+  "Economics",
+  "Business / management",
+  "Finance / accounting",
+  "Marketing",
+  "Communications / journalism",
+  "Education",
+  "English / literature / writing",
+  "History",
+  "Philosophy / religious studies",
+  "Foreign languages",
+  "Art / graphic design",
+  "Music",
+  "Theater / film",
+  "Architecture",
+  "Law / pre-law",
+  "Criminal justice",
+  "Environmental science",
+  "Agriculture",
+  "Hospitality / tourism",
+  "Other",
+] as const;
+const SUBJECTS = [
+  "Math",
+  "Biology",
+  "Chemistry",
+  "Physics",
+  "English / writing",
+  "History / social studies",
+  "Foreign languages",
+  "Computer science",
+  "Business / economics",
+  "Art",
+  "Music",
+  "Sports / PE",
+  "Other",
+] as const;
+
 /** Physical traits, ethnicity, education and work of each close relative. */
 const RELATIVE_COLUMNS: readonly GridColumn[] = [
   {
-    key: "age",
-    label: "Age (or age at death)",
-    kind: "text",
-    max: 40,
-    placeholder: "e.g. 58 / died at 80",
+    key: "living",
+    label: "Living or deceased",
+    kind: "select",
+    options: ["Living", "Deceased", "Unknown"],
   },
-  { key: "height", label: "Height", kind: "text", max: 20, placeholder: "e.g. 5'6\"" },
+  { key: "age", label: "Age (or age at death)", kind: "select", options: AGES },
+  { key: "height", label: "Height", kind: "select", options: HEIGHTS },
   { key: "eyeColor", label: "Eye color", kind: "select", options: [...EYE_COLORS, "Unknown"] },
   {
     key: "hairColor",
@@ -170,18 +312,11 @@ const RELATIVE_COLUMNS: readonly GridColumn[] = [
   {
     key: "ethnicity",
     label: "Ethnicity",
-    kind: "text",
-    max: 80,
-    placeholder: "e.g. Irish, Mexican, Chinese",
+    kind: "select",
+    options: [...ETHNICITIES, "Mixed", "Unknown"],
   },
   { key: "education", label: "Education", kind: "select", options: EDUCATION_LEVELS },
-  {
-    key: "occupation",
-    label: "Occupation",
-    kind: "text",
-    max: 100,
-    placeholder: "e.g. Teacher, retired nurse",
-  },
+  { key: "occupation", label: "Occupation", kind: "select", options: OCCUPATIONS },
 ];
 const SIBLING_COLUMNS: readonly GridColumn[] = [
   {
@@ -402,18 +537,18 @@ export const FORM_SECTIONS: FormSectionDef[] = [
       },
       {
         name: "maternalAncestry",
-        label: "Ethnic ancestry on your mother's side",
-        hint: "Your family's roots, e.g. Irish, Italian, Mexican, Korean — not your nationality or where you were born.",
-        kind: "text",
+        label: "Ethnic ancestry on your mother's side (choose all that apply)",
+        hint: "Your family's roots — not your nationality or where you were born.",
+        kind: "multi",
         required: true,
-        max: 200,
+        options: [...ETHNICITIES, "Don't know"],
       },
       {
         name: "paternalAncestry",
-        label: "Ethnic ancestry on your father's side",
-        kind: "text",
+        label: "Ethnic ancestry on your father's side (choose all that apply)",
+        kind: "multi",
         required: true,
-        max: 200,
+        options: [...ETHNICITIES, "Don't know"],
       },
       {
         name: "religion",
@@ -481,28 +616,62 @@ export const FORM_SECTIONS: FormSectionDef[] = [
       {
         name: "school",
         label: "College or university you attend or attended (or “None”)",
+        hint: "Start typing and pick your school from the list. Not listed? Just type its full name.",
         kind: "text",
+        widget: "school",
         required: true,
         max: 200,
         identifying: true,
       },
       {
-        name: "major",
-        label: "Major or field of study (or “None”)",
+        name: "school2",
+        label: "Another college or university (optional)",
         kind: "text",
-        required: true,
         max: 200,
+        widget: "school",
+        identifying: true,
+        showIf: { field: "school", filled: true },
+      },
+      {
+        name: "school3",
+        label: "Another college or university (optional)",
+        kind: "text",
+        max: 200,
+        widget: "school",
+        identifying: true,
+        showIf: { field: "school2", filled: true },
+      },
+      {
+        name: "major",
+        label: "Major or field of study",
+        kind: "select",
+        required: true,
+        options: MAJORS,
       },
       {
         name: "academicStrengths",
-        label: "Your strongest subjects or academic strengths",
-        kind: "text",
+        label: "Your strongest subjects (choose all that apply)",
+        kind: "multi",
         required: true,
-        max: 300,
+        options: SUBJECTS,
+      },
+      {
+        name: "gpa",
+        label: "GPA (optional)",
+        kind: "select",
+        options: [
+          "3.8 – 4.0",
+          "3.5 – 3.7",
+          "3.0 – 3.4",
+          "2.5 – 2.9",
+          "Below 2.5",
+          "Don't know / not applicable",
+        ],
       },
       {
         name: "testScores",
-        label: "GPA, SAT or ACT scores (optional)",
+        label: "SAT or ACT score (optional)",
+        hint: "For example: SAT 1350 or ACT 29.",
         kind: "text",
         max: 200,
       },
@@ -917,7 +1086,7 @@ export const FORM_SECTIONS: FormSectionDef[] = [
       {
         name: "relatives",
         label: "Your parents and grandparents",
-        hint: "Intended parents care a lot about these. Fill in what you know — choose or write “Unknown” if you don't know something.",
+        hint: "Intended parents care a lot about these. Pick from each list — choose “Unknown” if you don't know something.",
         kind: "grid",
         required: true,
         rows: [
@@ -1218,11 +1387,18 @@ export const FORM_SECTIONS: FormSectionDef[] = [
       },
       {
         name: "lastPap",
-        label: "When was your last Pap smear? (month and year, or “Never”)",
-        kind: "text",
+        label: "When was your last Pap smear?",
+        kind: "select",
         required: true,
-        max: 60,
         onlyFor: "egg",
+        options: [
+          "In the last 12 months",
+          "1–2 years ago",
+          "2–3 years ago",
+          "More than 3 years ago",
+          "Never",
+          "Don't remember",
+        ],
       },
       {
         name: "abnormalPap",
@@ -1312,6 +1488,43 @@ export function displayFields(
   );
 }
 
+/**
+ * Saved answers made ready for the form: an answer that is no longer one of a
+ * question's choices (e.g. typed text from before it became a dropdown) is
+ * cleared so the applicant picks again, instead of the save being rejected.
+ */
+export function sanitizeForForm(
+  fields: FieldDef[],
+  values: Record<string, unknown>,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...values };
+  for (const f of fields) {
+    const v = out[f.name];
+    if (v === undefined) continue;
+    if (f.kind === "select" && !(f.options ?? []).includes(v as string)) delete out[f.name];
+    else if (f.kind === "multi") {
+      const kept = Array.isArray(v) ? v.filter((x) => (f.options ?? []).includes(x)) : [];
+      if (kept.length) out[f.name] = kept;
+      else delete out[f.name];
+    } else if (f.kind === "grid") {
+      const grid = (v && typeof v === "object" ? v : {}) as Record<string, Record<string, unknown>>;
+      const next: Record<string, Record<string, unknown>> = {};
+      for (const r of f.rows ?? []) {
+        const row: Record<string, unknown> = {};
+        for (const c of f.columns ?? []) {
+          const x = grid[r.key]?.[c.key];
+          if (typeof x !== "string" || !x) continue;
+          if (c.kind === "select" && !(c.options ?? []).includes(x)) continue;
+          row[c.key] = x;
+        }
+        if (Object.keys(row).length) next[r.key] = row;
+      }
+      out[f.name] = next;
+    }
+  }
+  return out;
+}
+
 /** A saved answer as readable text (grids become one line per person). */
 export function formatAnswer(f: FieldDef, v: unknown): string {
   if (f.kind === "grid") {
@@ -1335,6 +1548,7 @@ export function formatAnswer(f: FieldDef, v: unknown): string {
 export function isFieldVisible(f: FieldDef, values: Record<string, unknown>): boolean {
   const c = f.showIf;
   if (!c) return true;
+  if ("filled" in c) return !isBlank(values[c.field]);
   if ("fields" in c) {
     return c.fields.some((name) => {
       const x = values[name];
