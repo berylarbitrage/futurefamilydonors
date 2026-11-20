@@ -57,8 +57,8 @@ export function FullApplication({
   const def = FORM_SECTIONS.find((s) => s.id === active);
 
   return (
-    <div className="grid gap-8 md:grid-cols-[16rem_1fr]">
-      <aside>
+    <div className="flex flex-col gap-8 md:grid md:grid-cols-[16rem_minmax(0,1fr)]">
+      <aside className="min-w-0">
         <div className="mb-4">
           <div className="mb-2 flex justify-between text-sm font-bold">
             <span className="tag">Progress</span>
