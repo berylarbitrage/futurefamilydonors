@@ -33,7 +33,7 @@ const TYPE_ERROR = "Please upload a PDF, JPG or PNG file of 10 MB or less.";
  * Unlike the form sections, documents can still be added after submitting.
  */
 export async function POST(req: Request) {
-  const limited = checkRateLimit(req, "portal");
+  const limited = checkRateLimit(req, "portal-upload", 60);
   if (limited) return limited;
   const { supabase, user } = await getSessionUser();
   if (!supabase || !user) return errorJson("Not signed in", 401);

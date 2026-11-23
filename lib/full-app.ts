@@ -11,7 +11,8 @@ export type FieldKind = "text" | "textarea" | "select" | "yesno" | "multi" | "nu
 export interface GridColumn {
   key: string;
   label: string;
-  kind: "text" | "select";
+  /** "multi": choose any number of the options (stored as a list). */
+  kind: "text" | "select" | "multi";
   options?: readonly string[];
   max?: number;
   placeholder?: string;
@@ -314,9 +315,9 @@ const RELATIVE_COLUMNS: readonly GridColumn[] = [
   },
   {
     key: "ethnicity",
-    label: "Ethnicity",
-    kind: "select",
-    options: [...ETHNICITIES, "Mixed", "Unknown"],
+    label: "Ethnicity (choose all that apply)",
+    kind: "multi",
+    options: [...ETHNICITIES, "Unknown"],
   },
   { key: "education", label: "Education", kind: "select", options: EDUCATION_LEVELS },
   { key: "occupation", label: "Occupation", kind: "select", options: OCCUPATIONS },
@@ -1508,6 +1509,14 @@ export function sanitizeForForm(
         const row: Record<string, unknown> = {};
         for (const c of f.columns ?? []) {
           const x = grid[r.key]?.[c.key];
+          if (c.kind === "multi") {
+            // A single answer saved before this became multi-choice still counts.
+            const list = (Array.isArray(x) ? x : typeof x === "string" ? [x] : []).filter((y) =>
+              (c.options ?? []).includes(y as string),
+            );
+            if (list.length) row[c.key] = list;
+            continue;
+          }
           if (typeof x !== "string" || !x) continue;
           if (c.kind === "select" && !(c.options ?? []).includes(x)) continue;
           row[c.key] = x;
@@ -1526,7 +1535,11 @@ export function formatAnswer(f: FieldDef, v: unknown): string {
     const grid = (v && typeof v === "object" ? v : {}) as Record<string, Record<string, unknown>>;
     const lines = (f.rows ?? []).flatMap((r) => {
       const cells = (f.columns ?? [])
-        .map((c) => [c.label, grid[r.key]?.[c.key]] as const)
+        .map(
+          (c) =>
+            [c.label.replace(/ \(choose all that apply\)$/, ""), grid[r.key]?.[c.key]] as const,
+        )
+        .map(([l, x]) => [l, Array.isArray(x) ? x.join(", ") : x] as const)
         .filter(([, x]) => typeof x === "string" && x.trim() !== "")
         .map(([l, x]) => `${l}: ${String(x).trim()}`);
       return cells.length ? [`${r.label} — ${cells.join(" · ")}`] : [];
@@ -1632,7 +1645,10 @@ function fieldSchema(f: FieldDef, strict: boolean): z.ZodType {
         const cells: Record<string, z.ZodType> = {};
         for (const c of f.columns ?? []) {
           const needed = strict && f.required && r.required;
-          if (c.kind === "select") {
+          if (c.kind === "multi") {
+            const arr = z.array(z.enum(c.options as [string, ...string[]])).max(c.options!.length);
+            cells[c.key] = needed ? arr.min(1, "Please choose at least one") : arr.optional();
+          } else if (c.kind === "select") {
             const e = z.enum(c.options as [string, ...string[]], { error: "Please choose one" });
             cells[c.key] = needed ? e : e.optional().or(z.literal(""));
           } else {

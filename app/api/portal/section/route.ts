@@ -15,7 +15,7 @@ const bodySchema = z.object({
 
 /** Save one section of the full application (draft or complete). */
 export async function PATCH(req: Request) {
-  const limited = checkRateLimit(req, "portal");
+  const limited = checkRateLimit(req, "portal-section", 120);
   if (limited) return limited;
   const { supabase, user } = await getSessionUser();
   if (!supabase || !user) return errorJson("Not signed in", 401);

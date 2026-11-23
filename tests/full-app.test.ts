@@ -90,7 +90,7 @@ describe("full application sections", () => {
       height: "5'6\"",
       eyeColor: "Brown",
       hairColor: "Black",
-      ethnicity: "Irish",
+      ethnicity: ["Irish", "Mexican"],
       education: "Bachelor's degree",
       occupation: "Education / teaching",
     };
@@ -195,5 +195,19 @@ describe("full application sections", () => {
     const s4 = f.find((x) => x.name === "school4")!;
     expect(isFieldVisible(s4, { school: "A", school2: "B" })).toBe(false);
     expect(isFieldVisible(s4, { school: "A", school2: "B", school3: "C" })).toBe(true);
+  });
+
+  it("ethnicity accepts several choices, and a single earlier answer is kept", () => {
+    const rel = sectionFields("family", "egg").find((f) => f.name === "relatives")!;
+    expect(formatAnswer(rel, { mother: { ethnicity: ["Irish", "Mexican"] } })).toBe(
+      "Mother — Ethnicity: Irish, Mexican",
+    );
+    const fam = sanitizeForForm([rel], {
+      relatives: { father: { ethnicity: "Korean" }, mother: { ethnicity: ["Irish", "Martian"] } },
+    });
+    expect(fam.relatives).toEqual({
+      father: { ethnicity: ["Korean"] },
+      mother: { ethnicity: ["Irish"] },
+    });
   });
 });

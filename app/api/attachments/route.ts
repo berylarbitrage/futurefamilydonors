@@ -39,7 +39,7 @@ const bodySchema = z.discriminatedUnion("action", [
  * Applicants upload to their own application; staff need edit_applications.
  */
 export async function POST(req: Request) {
-  const limited = checkRateLimit(req, "portal");
+  const limited = checkRateLimit(req, "portal-upload", 60);
   if (limited) return limited;
   const { supabase, user } = await getSessionUser();
   if (!supabase || !user) return errorJson("Not signed in", 401);
