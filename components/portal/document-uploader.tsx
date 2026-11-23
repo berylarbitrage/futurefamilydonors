@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { CheckCircle2, FileText, Trash2, Upload } from "lucide-react";
+import { Camera, CheckCircle2, FileText, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { DOC_LIMITS, docTypesFor } from "@/lib/documents";
 import { HEIC_HINT, withKnownType } from "@/lib/file-type";
@@ -16,6 +16,17 @@ export interface PortalDocument {
   sizeBytes: number;
   createdAt: string;
 }
+
+/**
+ * Photos and PDFs get separate pickers. A single input that accepts
+ * ".pdf,.jpg,…,application/pdf,image/…" breaks the "Photos / Gallery" option in
+ * many Android browsers (the gallery app can't serve a mixed image+PDF request),
+ * while image-only inputs, like the ones on the photo step, open the album fine.
+ */
+const PICKERS = [
+  { key: "photo", label: "Photo", accept: "image/jpeg,image/png", Icon: Camera },
+  { key: "pdf", label: "PDF", accept: "application/pdf,.pdf", Icon: FileText },
+] as const;
 
 const size = (b: number) =>
   b >= 1024 * 1024
@@ -128,26 +139,35 @@ export function DocumentUploader({
                   <p className="text-muted mt-0.5 text-xs">{t.hint}</p>
                 </div>
                 {!full && (
-                  <label
-                    htmlFor={inputId}
-                    className="border-border text-primary hover:border-primary has-[:focus-visible]:outline-ring inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold has-[:focus-visible]:outline-2"
-                  >
-                    <Upload className="size-4" aria-hidden />
-                    {busy === t.id ? "Uploading…" : mine.length ? "Add another" : "Upload"}
-                    <input
-                      id={inputId}
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
-                      className="sr-only"
-                      disabled={!!busy}
-                      aria-label={`Upload ${t.label}`}
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        e.target.value = "";
-                        if (f) void upload(t.id, f);
-                      }}
-                    />
-                  </label>
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
+                    {busy === t.id ? (
+                      <span className="text-muted text-sm font-semibold">Uploading…</span>
+                    ) : (
+                      PICKERS.map(({ key, label, accept, Icon }) => (
+                        <label
+                          key={key}
+                          htmlFor={`${inputId}-${key}`}
+                          className="border-border text-primary hover:border-primary has-[:focus-visible]:outline-ring inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold has-[:focus-visible]:outline-2"
+                        >
+                          <Icon className="size-4" aria-hidden />
+                          {mine.length ? `Add ${label.toLowerCase()}` : label}
+                          <input
+                            id={`${inputId}-${key}`}
+                            type="file"
+                            accept={accept}
+                            className="sr-only"
+                            disabled={!!busy}
+                            aria-label={`Upload ${t.label} as ${label}`}
+                            onChange={(e) => {
+                              const f = e.target.files?.[0];
+                              e.target.value = "";
+                              if (f) void upload(t.id, f);
+                            }}
+                          />
+                        </label>
+                      ))
+                    )}
+                  </div>
                 )}
               </div>
               {mine.length > 0 && (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Check, Copy } from "lucide-react";
@@ -10,14 +10,23 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Honeypot } from "@/components/forms/honeypot";
 import { EmailVerification } from "@/components/forms/email-verification";
+import { copyText } from "@/lib/copy-text";
 
 function CopyRow({ label, url }: { label: string; url: string }) {
   const [copied, setCopied] = useState(false);
+  const [manual, setManual] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   return (
     <div className="space-y-1.5">
       <p className="text-sm font-bold">{label}</p>
       <div className="flex gap-2">
-        <Input readOnly value={url} aria-label={label} onFocus={(e) => e.currentTarget.select()} />
+        <Input
+          ref={inputRef}
+          readOnly
+          value={url}
+          aria-label={label}
+          onFocus={(e) => e.currentTarget.select()}
+        />
         <Button
           type="button"
           variant="primary"
@@ -25,14 +34,32 @@ function CopyRow({ label, url }: { label: string; url: string }) {
           className="shrink-0"
           aria-label={`Copy ${label}`}
           onClick={async () => {
-            await navigator.clipboard.writeText(url);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
+            if (await copyText(url)) {
+              setManual(false);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            } else {
+              // This browser won't let us copy: select the link so the user can copy it.
+              setManual(true);
+              inputRef.current?.focus();
+              inputRef.current?.setSelectionRange(0, url.length);
+            }
           }}
         >
           {copied ? <Check /> : <Copy />}
         </Button>
       </div>
+      {copied && (
+        <p role="status" className="text-primary text-sm">
+          Copied!
+        </p>
+      )}
+      {manual && (
+        <p role="status" className="text-muted text-sm">
+          Your browser blocked automatic copying. The link is selected — press and hold it, then tap
+          Copy.
+        </p>
+      )}
     </div>
   );
 }
