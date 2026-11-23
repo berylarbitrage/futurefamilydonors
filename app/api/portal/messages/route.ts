@@ -24,7 +24,7 @@ const schema = z
 
 /** Applicant replies to their coordinator from the portal. */
 export async function POST(req: Request) {
-  const limited = checkRateLimit(req, "portal");
+  const limited = checkRateLimit(req, "portal-messages", 30);
   if (limited) return limited;
   const { supabase, user } = await getSessionUser();
   if (!supabase || !user) return errorJson("Not signed in", 401);

@@ -12,9 +12,14 @@ export function errorJson(message: string, status: number, extra?: Record<string
 }
 
 /** Apply the standard 10/min/IP write rate limit. Returns a 429 response or null. */
-export function checkRateLimit(req: Request, scope: string) {
+/**
+ * Per-IP limit per minute. Public forms keep the default of 10; signed-in
+ * portal routes allow more, because the full application autosaves after
+ * each answer and uploads take two requests per file.
+ */
+export function checkRateLimit(req: Request, scope: string, limit = 10) {
   const ip = clientIp(req.headers);
-  const r = rateLimit(`${scope}:${ip}`);
+  const r = rateLimit(`${scope}:${ip}`, limit);
   if (!r.ok) return errorJson("Too many requests. Please try again in a minute.", 429);
   return null;
 }

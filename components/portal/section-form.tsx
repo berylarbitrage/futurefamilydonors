@@ -19,10 +19,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { NativeSelect } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { SchoolCombobox } from "@/components/forms/school-combobox";
+import { MultiSelect } from "@/components/forms/multi-select";
 import { cn } from "@/lib/utils";
 
 type Values = Record<string, unknown>;
 const AUTOSAVE_MS = 1500;
+const RETRY_MS = 15_000;
 const toNumber = (v: unknown) =>
   v === "" || v === null || v === undefined ? undefined : Number(v);
 
@@ -33,8 +35,10 @@ function cleanGrid(v: unknown): Values | undefined {
   for (const [row, cells] of Object.entries(v as Record<string, Values>)) {
     if (!cells || typeof cells !== "object") continue;
     const kept: Values = {};
-    for (const [k, x] of Object.entries(cells))
+    for (const [k, x] of Object.entries(cells)) {
       if (typeof x === "string" && x.trim() !== "") kept[k] = x;
+      else if (Array.isArray(x) && x.length) kept[k] = x;
+    }
     if (Object.keys(kept).length) out[row] = kept;
   }
   return Object.keys(out).length ? out : undefined;
@@ -131,6 +135,17 @@ export function SectionForm({
         error?: string;
         issues?: { path: string; message: string }[];
       };
+      if (res.status === 429) {
+        // Saving too often: try the autosave again shortly; ask for a short wait otherwise.
+        if (mode === "auto") {
+          setStatus("Saving shortly…");
+          if (timer.current) clearTimeout(timer.current);
+          timer.current = setTimeout(() => void save(getValues(), "auto"), RETRY_MS);
+        } else {
+          setStatus("Saving a lot at once — please wait a few seconds and press again.");
+        }
+        return;
+      }
       if (!res.ok) {
         if (mode !== "auto") j.issues?.forEach((i) => setError(i.path, { message: i.message }));
         setStatus(
@@ -171,6 +186,11 @@ export function SectionForm({
   }, [watch, getValues, save, readOnly]);
 
   const e = errors as Record<string, { message?: string } | undefined>;
+  const cellList = (path: string): string[] => {
+    let cur: unknown = values;
+    for (const part of path.split(".")) cur = (cur as Record<string, unknown> | undefined)?.[part];
+    return Array.isArray(cur) ? (cur as string[]) : typeof cur === "string" && cur ? [cur] : [];
+  };
   const cellError = (path: string): string | undefined => {
     let cur: unknown = errors;
     for (const part of path.split(".")) cur = (cur as Record<string, unknown> | undefined)?.[part];
@@ -197,7 +217,21 @@ export function SectionForm({
           };
           const followUp = !!f.showIf;
           let control: React.ReactNode;
-          if (f.kind === "yesno" || f.kind === "multi") {
+          if (f.kind === "multi" && f.options!.length > 15) {
+            // Long "choose all that apply" lists: a compact dropdown checklist.
+            control = (
+              <Field id={f.name} label={f.label} required={f.required} error={err} hint={f.hint}>
+                <MultiSelect
+                  id={f.name}
+                  options={f.options!}
+                  selected={cellList(f.name)}
+                  register={register(f.name)}
+                  invalid={!!err}
+                  describedBy={err ? `${f.name}-error` : undefined}
+                />
+              </Field>
+            );
+          } else if (f.kind === "yesno" || f.kind === "multi") {
             const opts = f.kind === "yesno" ? ["Yes", "No"] : f.options!;
             control = (
               <fieldset
@@ -266,7 +300,16 @@ export function SectionForm({
                         };
                         return (
                           <Field key={c.key} id={id} label={c.label} error={cErr}>
-                            {c.kind === "select" ? (
+                            {c.kind === "multi" ? (
+                              <MultiSelect
+                                id={id}
+                                options={c.options!}
+                                selected={cellList(path)}
+                                register={register(path)}
+                                invalid={!!cErr}
+                                describedBy={cErr ? `${id}-error` : undefined}
+                              />
+                            ) : c.kind === "select" ? (
                               <NativeSelect id={id} defaultValue="" {...cInv} {...register(path)}>
                                 <option value="">Select</option>
                                 {c.options!.map((o) => (

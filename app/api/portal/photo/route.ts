@@ -64,7 +64,7 @@ async function syncPhotoCompletion(
  *   3. confirm -> server verifies the object and records it
  */
 export async function POST(req: Request) {
-  const limited = checkRateLimit(req, "portal");
+  const limited = checkRateLimit(req, "portal-upload", 60);
   if (limited) return limited;
   const { supabase, user } = await getSessionUser();
   if (!supabase || !user) return errorJson("Not signed in", 401);
