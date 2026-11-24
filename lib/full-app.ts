@@ -38,6 +38,8 @@ export interface FieldDef {
   showIf?: ShowIf;
   /** "grid" questions: one row per person, one column per detail. */
   rows?: readonly GridRow[];
+  /** "grid" questions: show only as many rows as this number answer (e.g. siblingCount). */
+  rowCountFrom?: string;
   columns?: readonly GridColumn[];
   /** "school": a type-ahead over the world universities list (free text still allowed). */
   widget?: "school";
@@ -1132,6 +1134,7 @@ export const FORM_SECTIONS: FormSectionDef[] = [
           { key: "sibling4", label: "Brother / sister 4" },
         ],
         columns: SIBLING_COLUMNS,
+        rowCountFrom: "siblingCount",
         showIf: { field: "siblingCount", gt: 0 },
       },
       ...FAMILY_CHECKLIST.map((f, i) =>
@@ -1527,6 +1530,14 @@ export function sanitizeForForm(
     }
   }
   return out;
+}
+
+/** The rows of a grid question to show: all of them, or as many as its count answer says. */
+export function visibleGridRows(f: FieldDef, values: Record<string, unknown>): readonly GridRow[] {
+  const rows = f.rows ?? [];
+  if (!f.rowCountFrom) return rows;
+  const n = Number(values[f.rowCountFrom]);
+  return Number.isFinite(n) && n > 0 ? rows.slice(0, Math.min(Math.floor(n), rows.length)) : [];
 }
 
 /** A saved answer as readable text (grids become one line per person). */

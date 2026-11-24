@@ -9,6 +9,7 @@ import {
   sanitizeForForm,
   sectionFields,
   sectionSchema,
+  visibleGridRows,
   type FieldDef,
   type FormSectionId,
 } from "@/lib/full-app";
@@ -44,13 +45,51 @@ function cleanGrid(v: unknown): Values | undefined {
   return Object.keys(out).length ? out : undefined;
 }
 
+/**
+ * A "choose all that apply" answer as a list. react-hook-form reports a
+ * checkbox group nobody has ticked as `false` (it registers the first box on
+ * its own), which the schema would reject as "expected array, received boolean".
+ */
+const asList = (v: unknown): string[] =>
+  Array.isArray(v) ? v : typeof v === "string" && v ? [v] : [];
+
+/** Every checklist answer (also inside grids) as a list, before validation. */
+function normalizeLists(values: Values, fields: FieldDef[]): Values {
+  const out: Values = { ...values };
+  for (const f of fields) {
+    if (f.kind === "multi") out[f.name] = asList(values[f.name]);
+    else if (f.kind === "grid" && values[f.name] && typeof values[f.name] === "object") {
+      const grid: Values = {};
+      for (const [row, cells] of Object.entries(values[f.name] as Record<string, Values>)) {
+        if (!cells || typeof cells !== "object") continue;
+        const next: Values = { ...cells };
+        for (const c of f.columns ?? []) if (c.kind === "multi") next[c.key] = asList(cells[c.key]);
+        grid[row] = next;
+      }
+      out[f.name] = grid;
+    }
+  }
+  return out;
+}
+
+/** Only the rows of a grid that are on screen (e.g. as many siblings as the applicant has). */
+function keepVisibleRows(f: FieldDef, v: unknown, values: Values): unknown {
+  if (!f.rowCountFrom || !v || typeof v !== "object") return v;
+  const out: Values = {};
+  for (const r of visibleGridRows(f, values)) {
+    const row = (v as Values)[r.key];
+    if (row !== undefined) out[r.key] = row;
+  }
+  return out;
+}
+
 /** Drop empty values and hidden follow-ups so a draft passes the lenient schema. */
 function clean(values: Values, fields: FieldDef[]): Values {
   const out: Values = {};
   for (const f of fields) {
     let v = values[f.name];
-    if (f.kind === "multi") v = Array.isArray(v) ? v : v ? [v] : [];
-    if (f.kind === "grid") v = cleanGrid(v);
+    if (f.kind === "multi") v = asList(v);
+    if (f.kind === "grid") v = cleanGrid(keepVisibleRows(f, v, values));
     if (v === "" || v === undefined || v === null || (typeof v === "number" && Number.isNaN(v)))
       continue;
     out[f.name] = v;
@@ -80,7 +119,11 @@ export function SectionForm({
   const zr = zodResolver(sectionSchema(section, donorType, true)) as unknown as Resolver<Values>;
   // zod skips cross-field checks while other answers are missing; add the
   // follow-up checks ourselves so every missing answer shows at once.
-  const resolver: Resolver<Values> = async (values, ctx, opts) => {
+  const resolver: Resolver<Values> = async (raw, ctx, opts) => {
+    let values = normalizeLists(raw, fields);
+    for (const f of fields)
+      if (f.rowCountFrom && values[f.name])
+        values = { ...values, [f.name]: keepVisibleRows(f, values[f.name], values) };
     const r = await zr(values, ctx, opts);
     const extra = followUpIssues(fields, clean(values, fields));
     if (!Object.keys(extra).length) return r;
@@ -283,7 +326,7 @@ export function SectionForm({
                   {f.required && <span className="text-destructive"> *</span>}
                 </legend>
                 {f.hint && <p className="text-muted text-xs">{f.hint}</p>}
-                {f.rows!.map((r) => (
+                {visibleGridRows(f, values).map((r) => (
                   <div key={r.key} className="border-ink bg-card rounded-[10px] border-3 p-4">
                     <p className="mb-3 text-sm font-semibold">
                       {r.label}
